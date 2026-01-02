@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Party Claw Arcade - Final Deluxe</title>
+    <style>
+        :root {
+            --primary: #FFB7B2;
+            --secondary: #B5EAD7;
+            --accent: #C7CEEA;
+            --dark: #444;
+            --timer-col: #ff9f43;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: #FFF9F9;
+            color: var(--dark);
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* HEADER */
+        header {
+            flex-shrink: 0;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background: #FFF9F9;
+            z-index: 100;
+        }
+
+        h1 { 
+            margin: 0;
+            font-size: 2rem;
+            color: #FF9AA2; 
+            text-shadow: 2px 2px 0px #FFF; 
+        }
+
+        .game-layout {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            flex-grow: 1;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        /* --- LEFT: MATH ZONE --- */
+        .math-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 6px 0 var(--accent);
+            border: 3px solid var(--accent);
+            width: 260px;
+            height: 450px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .math-panel.play-mode {
+            background: #f0fff4;
+            border-color: #2ecc71;
+            box-shadow: 0 6px 0 #27ae60;
+        }
+
+        .token-display {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            background: #FFDAC1;
+            padding: 10px 20px;
+            border-radius: 15px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        /* Timer */
+        .timer-container {
+            width: 100%;
+            background: #eee;
+            height: 12px;
+            border-radius: 10px;
+            margin-bottom: 5px;
+            overflow: hidden;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+        .timer-bar {
+            height: 100%;
+            background: var(--timer-col);
+            width: 100%;
+            transition: width 1s linear;
+        }
+        .timer-text { font-size: 0.9rem; color: #888; font-weight: bold; margin-bottom: 15px;}
+
+        /* Math Inputs */
+        .math-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .math-problem {
+            font-size: 3rem;
+            margin: 10px 0;
+            color: #FF6F61;
+            font-weight: bold;
+        }
+
+        input[type="number"] {
+            font-size: 2rem;
+            width: 120px;
+            padding: 10px;
+            text-align: center;
+            border: 3px solid var(--secondary);
+            border-radius: 15px;
+            outline: none;
+            color: #555;
+        }
+
+        button.submit-btn {
+            background-color: var(--secondary);
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #8AC6B0;
+        }
+        button.submit-btn:active { transform: translateY(4px); box-shadow: none; }
+
+        .feedback { height: 25px; margin-top: 10px; font-weight: bold; font-size: 1.1rem; }
+        .correct { color: #2ecc71; }
+        .incorrect { color: #e74c3c; }
+
+        /* Play Mode Message */
+        .play-message {
+            display: none;
+            font-size: 2rem;
+            text-align: center;
+            color: #27ae60;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        /* --- RIGHT: MACHINE --- */
+        .machine-panel {
+            width: 400px;
+            height: 500px;
+            background: #FF9AA2;
+            border-radius: 20px 20px 10px 10px;
+            border: 6px solid #FF6F61;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .glass-case {
+            flex-grow: 1;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.1));
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid rgba(255,255,255,0.6);
+            margin-bottom: 15px;
+        }
+
+        /* CLAW */
+        .claw-assembly {
+            position: absolute;
+            top: 0;
+            left: 50%; 
+            width: 80px;
+            height: 60px;
+            z-index: 20;
+            transition: left 0.1s linear, top 0.5s ease;
+        }
+
+        .claw-rod {
+            width: 6px;
+            height: 35px;
+            background: #444;
+            margin: 0 auto;
+        }
+
+        .claw-hand {
+            width: 80px;
+            height: 45px;
+            border-left: 6px solid #444;
+            border-right: 6px solid #444;
+            border-bottom: 6px solid #444;
+            border-radius: 0 0 30px 30px;
+            position: relative;
+        }
+
+        .prize-pit {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 120px;
+        }
+
+        .squishmallow {
+            width: 75px;
+            height: 75px;
+            position: absolute;
+            bottom: 5px;
+            font-size: 4.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            filter: drop-shadow(0px 5px 4px rgba(0,0,0,0.2));
+            transition: left 0.5s, bottom 0.5s cubic-bezier(0.6, 0.04, 0.98, 0.335), transform 0.5s;
+        }
+
+        /* Controls */
+        .control-board {
+            background: #FF6F61;
+            padding: 12px;
+            border-radius: 15px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ctrl-btn {
+            width: 65px;
+            height: 55px;
+            font-size: 1.8rem;
+            border: none;
+            border-radius: 12px;
+            background: #FFDAC1;
+            box-shadow: 0 5px 0 #e67e22;
+            cursor: pointer;
+            color: #d35400;
+        }
+        .ctrl-btn:active { transform: translateY(5px); box-shadow: none; }
+        .ctrl-btn:disabled { background: #ccc; box-shadow: none; color: #888; transform: translateY(5px); }
+
+        .drop-btn {
+            width: 140px;
+            height: 55px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 40px;
+            background: #FFB7B2;
+            color: #c0392b;
+            box-shadow: 0 5px 0 #c0392b;
+            cursor: pointer;
+        }
+        .drop-btn:active { transform: translateY(5px); box-shadow: none; }
+        .drop-btn:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; transform: translateY(5px); color: #888;}
+
+        /* Collection Bar */
+        .collection-bar {
+            flex-shrink: 0;
+            margin: 10px 0 20px 0;
+            width: 90%;
+            max-width: 800px;
+            height: 90px;
+            background: white;
+            border-radius: 50px;
+            border: 2px dashed var(--accent);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 10px;
+            overflow-x: auto;
+        }
+        .collection-label { font-weight: bold; color: var(--accent); margin-right: 10px; white-space: nowrap; }
+        .collected-item { font-size: 3rem; animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+        /* --- CELEBRATION OVERLAY --- */
+        #celebration-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        #celebration-overlay.active {
+            opacity: 1;
+            animation: fadeInOut 2.5s forwards;
+        }
+
+        .party-symbol {
+            font-size: 8rem;
+            position: absolute;
+            animation: floatUp 2s ease-out forwards;
+        }
+        
+        .party-text {
+            font-size: 4rem;
+            color: #ff0055;
+            font-weight: bold;
+            text-shadow: 4px 4px 0px white;
+            background: rgba(255,255,255,0.8);
+            padding: 20px 40px;
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transform: scale(0);
+        }
+
+        #celebration-overlay.active .party-text {
+            animation: textPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes floatUp { 0% { transform: translateY(100px); opacity:0;} 20% { opacity:1; } 100% { transform: translateY(-500px) rotate(20deg); opacity:0; } }
+        @keyframes textPop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+        @keyframes fadeInOut { 0% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+
+        /* --- SLIP ANIMATION --- */
+        .slip-message {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.2rem;
+            color: #e74c3c;
+            font-weight: bold;
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 20px;
+            border: 3px solid #e74c3c;
+            z-index: 100;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            animation: slipFade 2s forwards;
+        }
+
+        .crying-emoji {
+            position: absolute;
+            font-size: 4rem;
+            z-index: 101;
+            animation: flyAway 2s forwards;
+        }
+
+        @keyframes slipFade { 
+            0% { opacity: 0; transform: translate(-50%, -40%); } 
+            20% { opacity: 1; transform: translate(-50%, -50%); } 
+            80% { opacity: 1; transform: translate(-50%, -50%); } 
+            100% { opacity: 0; transform: translate(-50%, -60%); } 
+        }
+
+        @keyframes flyAway {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-200px) scale(1.5); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🧸 Mega Squish Math 🧸</h1>
+    </header>
+
+    <div id="celebration-overlay">
+        <div class="party-text">YOU WON!</div>
+    </div>
+
+    <div class="game-layout">
+        
+        <div class="math-panel" id="math-panel">
+            <div class="token-display">Tokens: <span id="token-count">0</span> 🪙</div>
+            
+            <div id="timer-wrapper" style="width:100%">
+                <div class="timer-container">
+                    <div class="timer-bar" id="timer-bar"></div>
+                </div>
+                <div class="timer-text" id="timer-text">30s</div>
+            </div>
+
+            <div class="math-content" id="math-content">
+                <div class="math-problem" id="math-problem">Start</div>
+                <input type="number" id="math-answer" placeholder="?">
+                <button class="submit-btn" onclick="checkMath()">Submit</button>
+                <div class="feedback" id="math-feedback">Solve to Play</div>
+            </div>
+
+            <div class="play-message" id="play-message">
+                <div>GO PLAY!</div>
+                <div style="font-size: 4rem; margin-top: 10px;">🕹️</div>
+            </div>
+        </div>
+
+        <div class="machine-panel">
+            <div class="glass-case">
+                <div class="claw-assembly" id="claw">
+                    <div class="claw-rod"></div>
+                    <div class="claw-hand"></div>
+                </div>
+                <div class="prize-pit" id="prize-pit"></div>
+            </div>
+
+            <div class="control-board">
+                <button class="ctrl-btn" id="btn-left" onmousedown="startMove(-1)" onmouseup="stopMove()" ontouchstart="startMove(-1)" ontouchend="stopMove()">⬅️</button>
+                <button class="drop-btn" id="play-btn" onclick="dropClaw()">DROP</button>
+                <button class="ctrl-btn" id="btn-right" onmousedown="startMove(1)" onmouseup="stopMove()" ontouchstart="startMove(1)" ontouchend="stopMove()">➡️</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="collection-bar">
+        <span class="collection-label">MY COLLECTION:</span>
+        <div id="collection-list" style="display:flex; gap:10px;"></div>
+    </div>
+
+    <script>
+        // --- CONFIG ---
+        const prizeTypes = ['🦄', '💎', '⭐', '🐼', '🐨', '💎', '🐙', '🐸', '⭐', '🦁', '🐷', '💎', '🐰', '🦊', '🐯'];
+        const HARD_MODE_TOLERANCE = 8; 
+        const SLIP_CHANCE = 0.25; 
+        
+        // --- STATE ---
+        let tokens = 0;
+        let currentAnswer = 0;
+        let isClawMoving = false;
+        let clawPosition = 50; 
+        let moveInterval = null;
+        let timeLeft = 30;
+        let timerInterval = null;
+
+        // --- GAME FLOW ---
+        function updateGameState() {
+            document.getElementById('token-count').innerText = tokens;
+            const mathPanel = document.getElementById('math-panel');
+            const mathContent = document.getElementById('math-content');
+            const playMessage = document.getElementById('play-message');
+            const timerWrapper = document.getElementById('timer-wrapper');
+            
+            const btnDrop = document.getElementById('play-btn');
+            const btnLeft = document.getElementById('btn-left');
+            const btnRight = document.getElementById('btn-right');
+
+            if (tokens === 0) {
+                mathPanel.classList.remove('play-mode');
+                mathContent.style.display = 'flex';
+                playMessage.style.display = 'none';
+                timerWrapper.style.opacity = '1';
+                btnDrop.disabled = true;
+                btnLeft.disabled = true;
+                btnRight.disabled = true;
+
+                if (!timerInterval) generateProblem(); 
+            } else {
+                mathPanel.classList.add('play-mode');
+                mathContent.style.display = 'none';
+                playMessage.style.display = 'block';
+                timerWrapper.style.opacity = '0';
+
+                if (!isClawMoving) {
+                    btnDrop.disabled = false;
+                    btnLeft.disabled = false;
+                    btnRight.disabled = false;
+                }
+                stopTimer();
+            }
+        }
+
+        function startTimer() {
+            stopTimer(); 
+            timeLeft = 30;
+            updateTimerUI();
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerUI();
+                if(timeLeft <= 0) {
+                    stopTimer();
+                    document.getElementById('math-feedback').innerText = "Time's Up!";
+                    document.getElementById('math-feedback').className = "feedback incorrect";
+                    setTimeout(generateProblem, 1500); 
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function updateTimerUI() {
+            document.getElementById('timer-text').innerText = timeLeft + "s";
+            const percent = (timeLeft / 30) * 100;
+            const bar = document.getElementById('timer-bar');
+            bar.style.width = percent + "%";
+            if(timeLeft > 10) bar.style.backgroundColor = "#2ecc71";
+            else if (timeLeft > 5) bar.style.backgroundColor = "#f1c40f";
+            else bar.style.backgroundColor = "#e74c3c";
+        }
+
+        // --- MATH ---
+        function generateProblem() {
+            const type = Math.random();
+            let num1, num2;
+
+            if (type < 0.33) { 
+                num1 = Math.floor(Math.random() * 50) + 1;
+                num2 = Math.floor(Math.random() * 49) + 1;
+                currentAnswer = num1 + num2;
+                document.getElementById('math-problem').innerText = `${num1} + ${num2}`;
+            } else if (type < 0.66) { 
+                num1 = Math.floor(Math.random() * 89) + 10;
+                num2 = Math.floor(Math.random() * (num1 - 1)) + 1;
+                currentAnswer = num1 - num2;
+                document.getElementById('math-problem').innerText = `${num1} - ${num2}`;
+            } else { 
+                num1 = Math.floor(Math.random() * 9) + 1;
+                num2 = Math.floor(Math.random() * 9) + 1;
+                currentAnswer = num1 * num2;
+                document.getElementById('math-problem').innerText = `${num1} x ${num2}`;
+            }
+            
+            document.getElementById('math-answer').value = '';
+            document.getElementById('math-answer').focus();
+            document.getElementById('math-feedback').innerText = "";
+            startTimer();
+        }
+
+        function checkMath() {
+            const userIn = parseInt(document.getElementById('math-answer').value);
+            const feedback = document.getElementById('math-feedback');
+            
+            if (userIn === currentAnswer) {
+                tokens = 1; 
+                feedback.innerText = "Correct!";
+                feedback.className = "feedback correct";
+                updateGameState(); 
+            } else {
+                feedback.innerText = "Try again!";
+                feedback.className = "feedback incorrect";
+            }
+        }
+
+        document.getElementById('math-answer').addEventListener("keypress", (e) => {
+            if (e.key === "Enter") checkMath();
+        });
+
+        // --- CLAW CONTROLS ---
+        document.addEventListener('keydown', (e) => {
+            if (tokens === 0 || isClawMoving) return;
+            if (e.key === "ArrowLeft") moveClaw(-2);
+            if (e.key === "ArrowRight") moveClaw(2);
+        });
+
+        function startMove(dir) {
+            if (tokens === 0 || isClawMoving) return;
+            if (moveInterval) clearInterval(moveInterval);
+            moveInterval = setInterval(() => moveClaw(dir * 1.5), 20);
+        }
+
+        function stopMove() { clearInterval(moveInterval); }
+
+        function moveClaw(amt) {
+            clawPosition += amt;
+            if (clawPosition < 10) clawPosition = 10;
+            if (clawPosition > 90) clawPosition = 90;
+            document.getElementById('claw').style.left = clawPosition + '%';
+        }
+
+        // --- GAME LOGIC ---
+        function initGame() {
+            const pit = document.getElementById('prize-pit');
+            for(let i=0; i<8; i++) createPrize(pit);
+            updateGameState();
+        }
+
+        function createPrize(container) {
+            const div = document.createElement('div');
+            div.className = 'squishmallow';
+            div.innerText = prizeTypes[Math.floor(Math.random() * prizeTypes.length)];
+            const randomLeft = Math.floor(Math.random() * 80) + 5; 
+            div.style.left = randomLeft + '%';
+            div.dataset.pos = randomLeft;
+            div.style.zIndex = Math.floor(Math.random() * 10);
+            container.appendChild(div);
+        }
+
+        function dropClaw() {
+            if(tokens <= 0 || isClawMoving) return;
+            tokens--; 
+            isClawMoving = true;
+            
+            document.getElementById('play-btn').disabled = true;
+            document.getElementById('btn-left').disabled = true;
+            document.getElementById('btn-right').disabled = true;
+            document.getElementById('token-count').innerText = tokens;
+
+            const claw = document.getElementById('claw');
+            const maxDepth = document.querySelector('.glass-case').offsetHeight - 80;
+
+            // 1. DOWN
+            let currentTop = 0;
+            const dropInterval = setInterval(() => {
+                currentTop += 4;
+                claw.style.top = currentTop + 'px';
+
+                if(currentTop >= maxDepth) {
+                    clearInterval(dropInterval);
+                    setTimeout(attemptGrab, 200);
+                }
+            }, 10);
+        }
+
+        function triggerSlipVisuals() {
+            const machine = document.querySelector('.machine-panel');
+
+            // Text
+            const msg = document.createElement('div');
+            msg.className = 'slip-message';
+            msg.innerHTML = "Oops!<br>The toy slipped!";
+            machine.appendChild(msg);
+
+            // Emoji
+            const cry = document.createElement('div');
+            cry.className = 'crying-emoji';
+            cry.innerText = '😭';
+            cry.style.left = clawPosition + '%';
+            cry.style.top = '30%';
+            machine.appendChild(cry);
+
+            // Cleanup
+            setTimeout(() => {
+                msg.remove();
+                cry.remove();
+            }, 2000);
+        }
+
+        function attemptGrab() {
+            const prizes = document.querySelectorAll('.prize-pit .squishmallow');
+            let grabbedPrize = null;
+            let bestDiff = 100;
+
+            prizes.forEach(prize => {
+                const prizePos = parseInt(prize.dataset.pos);
+                const diff = Math.abs(clawPosition - (prizePos + 5)); 
+                if (diff < bestDiff) bestDiff = diff;
+                if (diff < HARD_MODE_TOLERANCE && !grabbedPrize) {
+                    grabbedPrize = prize;
+                }
+            });
+
+            const claw = document.getElementById('claw');
+            
+            // ATTACH TO CLAW
+            if (grabbedPrize) {
+                document.getElementById('prize-pit').removeChild(grabbedPrize);
+                claw.appendChild(grabbedPrize);
+                grabbedPrize.style.left = '2px'; 
+                grabbedPrize.style.bottom = '-60px'; 
+            }
+
+            const willSlip = grabbedPrize && (Math.random() < SLIP_CHANCE);
+            const slipHeight = Math.floor(Math.random() * 200) + 50; 
+            let hasSlipped = false;
+
+            // 2. UP
+            setTimeout(() => {
+                let currentTop = parseFloat(claw.style.top);
+                const upInterval = setInterval(() => {
+                    currentTop -= 3;
+                    claw.style.top = currentTop + 'px';
+
+                    // --- SLIP LOGIC FIX ---
+                    if (willSlip && !hasSlipped && currentTop < slipHeight) {
+                        hasSlipped = true;
+                        
+                        // Visuals for slipping
+                        triggerSlipVisuals();
+
+                        // Detach from claw
+                        claw.removeChild(grabbedPrize);
+                        const pit = document.getElementById('prize-pit');
+                        pit.appendChild(grabbedPrize);
+                        
+                        // Set position to where claw is currently
+                        grabbedPrize.style.left = clawPosition + '%';
+                        grabbedPrize.style.bottom = '150px'; 
+                        
+                        // Force reflow
+                        void grabbedPrize.offsetWidth; 
+                        
+                        // Animate Drop to floor
+                        grabbedPrize.style.bottom = '5px'; 
+                        grabbedPrize.style.transform = 'rotate(' + (Math.random()*90 - 45) + 'deg)';
+                        grabbedPrize.dataset.pos = clawPosition;
+
+                        grabbedPrize = null; 
+                    }
+
+                    // REACHED TOP
+                    if(currentTop <= 0) {
+                        clearInterval(upInterval);
+                        
+                        if(grabbedPrize) {
+                            const prizeEmoji = grabbedPrize.innerText; 
+                            claw.removeChild(grabbedPrize);
+                            addToCollection(prizeEmoji);
+                            triggerCelebration();
+                        }
+                        
+                        isClawMoving = false;
+                        if(document.getElementById('prize-pit').childElementCount < 3) {
+                            for(let k=0; k<3; k++) createPrize(document.getElementById('prize-pit'));
+                        }
+                        updateGameState();
+                    }
+                }, 10);
+            }, 500);
+        }
+
+        function addToCollection(emoji) {
+            const list = document.getElementById('collection-list');
+            const span = document.createElement('span');
+            span.className = 'collected-item';
+            span.innerText = emoji;
+            list.insertBefore(span, list.firstChild);
+        }
+
+        function triggerCelebration() {
+            const overlay = document.getElementById('celebration-overlay');
+            overlay.innerHTML = '<div class="party-text">YOU WON!</div>'; 
+            
+            const particles = ['🎉', '🎈', '✨', '🦄', '⭐', '🎊'];
+            for(let i=0; i<15; i++) {
+                const p = document.createElement('div');
+                p.className = 'party-symbol';
+                p.innerText = particles[Math.floor(Math.random()*particles.length)];
+                p.style.left = Math.random() * 100 + '%';
+                p.style.top = Math.random() * 100 + '%';
+                p.style.animationDuration = (1 + Math.random()) + 's';
+                overlay.appendChild(p);
+            }
+
+            overlay.classList.add('active');
+            setTimeout(() => {
+                overlay.classList.remove('active');
+            }, 2500);
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
