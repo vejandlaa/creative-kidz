@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Smart Monster Tic-Tac-Toe</title>
+    <style>
+        :root {
+            --bg-color: #e0f7fa;
+            --grid-color: #006064;
+            --cell-size: 110px;
+            --focus-color: #ffeb3b;
+            --focus-outline: 8px solid var(--focus-color);
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: var(--bg-color);
+            padding: 10px;
+            box-sizing: border-box;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        /* TV Focus */
+        .tv-focused {
+            outline: var(--focus-outline) !important;
+            box-shadow: 0 0 20px var(--focus-color), 0 0 40px rgba(0,0,0,0.5) !important;
+            transform: scale(1.1) !important;
+            z-index: 100 !important;
+        }
+
+        h1 { 
+            color: #006064; margin: 0 0 10px 0; 
+            text-shadow: 2px 2px white; text-align: center; 
+            font-size: clamp(1.5rem, 4vw, 3rem);
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border: 6px solid var(--grid-color);
+            max-width: 800px;
+            width: 95%;
+            text-align: center;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Buttons */
+        .btn {
+            padding: 15px 30px; font-size: 1.5rem; 
+            border: none; border-radius: 50px;
+            cursor: pointer; font-family: inherit; font-weight: bold; color: white;
+            margin: 10px; transition: transform 0.1s; outline: none;
+        }
+        .btn-blue { background-color: #0288d1; }
+        .btn-red { background-color: #c62828; }
+        .btn-green { background-color: #2e7d32; }
+
+        /* Avatar Grid */
+        .avatar-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin: 20px 0; }
+        .avatar-option {
+            width: 100px; height: 100px; border: 4px solid #eee; border-radius: 25px;
+            display: flex; justify-content: center; align-items: center;
+            background: #f9f9f9; transition: transform 0.2s;
+        }
+        .draw-new-btn { background: #fff; border: 4px dashed #333; font-size: 3rem; color: #333; }
+
+        /* Drawing Studio */
+        #drawing-area { display: flex; flex-direction: column; align-items: center; }
+        .giggle-bot-area {
+            position: relative; margin-bottom: 10px; width: 100%; display: flex;
+            justify-content: center; align-items: flex-end; height: 100px;
+        }
+        .bot-avatar { font-size: 4rem; margin-right: 15px; filter: drop-shadow(0 4px 2px rgba(0,0,0,0.2)); }
+        .speech-bubble {
+            background: #333; color: white; padding: 15px 25px;
+            border-radius: 20px 20px 20px 0; font-size: 1.2rem;
+            max-width: 400px; display: flex; align-items: center; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .canvas-wrapper {
+            position: relative; border-radius: 15px; overflow: hidden;
+            border: 6px solid #333; background: white; cursor: crosshair;
+        }
+        #tv-cursor {
+            width: 15px; height: 15px; background: rgba(255, 0, 0, 0.8);
+            border: 2px solid white; border-radius: 50%;
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 10;
+            display: none; box-shadow: 0 0 5px black;
+        }
+        .tools-panel { background: #eee; width: 100%; padding: 15px; border-radius: 15px; margin-top: 15px; }
+        .palette { display: flex; gap: 15px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap;}
+        .color-swatch {
+            width: 40px; height: 40px; border-radius: 50%; 
+            border: 4px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .color-swatch.active { transform: scale(1.2); border-color: #333; }
+
+        /* Game Board */
+        .scoreboard { display: flex; justify-content: space-around; width: 100%; margin-bottom: 15px; background: #fff; padding: 15px; border-radius: 15px; border: 2px solid #ccc; }
+        .score-val { font-size: 2rem; font-weight: 800; color: #c62828; }
+        .board { 
+            display: grid; grid-template-columns: repeat(3, var(--cell-size)); 
+            grid-template-rows: repeat(3, var(--cell-size)); 
+            gap: 10px; background-color: var(--grid-color); 
+            border: 10px solid var(--grid-color); border-radius: 20px; 
+            margin: 0 auto; 
+        }
+        @media (min-height: 800px) { :root { --cell-size: 140px; } }
+        .cell { background-color: #fff; width: var(--cell-size); height: var(--cell-size); display: flex; align-items: center; justify-content: center; position: relative; border-radius: 15px; overflow: hidden; }
+
+        /* Visuals */
+        .avatar-wrapper { width: 80%; height: 80%; position: relative; display: flex; justify-content: center; align-items: center; }
+        .custom-drawing { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 2px rgba(0,0,0,0.3)); }
+        
+        .mon-slime { width: 70%; height: 60%; background: #a3cf15; border-radius: 50% 50% 40% 40%; border: 3px solid #6d8c00; position: relative; }
+        .mon-slime::before { content: ''; position: absolute; top: 20%; left: 25%; width: 30%; height: 40%; background: white; border: 2px solid black; border-radius: 50%; }
+        .mon-slime::after { content: ''; position: absolute; top: 30%; left: 40%; width: 10%; height: 10%; background: black; border-radius: 50%; }
+
+        /* Animations */
+        .winner-anim { animation: happyBounce 0.8s infinite; }
+        @keyframes happyBounce { 0% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        .sinking-anim { animation: sinkIntoWater 3s forwards; }
+        @keyframes sinkIntoWater { 100% { transform: translateY(80px); opacity: 0; } }
+        .puddle { position: absolute; bottom: 5px; width: 80%; height: 20%; background: #29b6f6; border-radius: 50%; animation: growPuddle 0.5s forwards; }
+        @keyframes growPuddle { from { transform: scale(0); } to { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <h1 id="main-title">Monster TV</h1>
+
+    <div class="container" id="app-container">
+        
+        <div id="view-mode" class="view-section">
+            <h2>Who is playing?</h2>
+            <button class="btn btn-blue nav-item" onclick="setMode('pvc')" tabindex="0">1 Player (vs Computer)</button>
+            <br>
+            <button class="btn btn-red nav-item" onclick="setMode('pvp')" tabindex="0">2 Players</button>
+            <p style="font-size: 0.9rem; color: #666; margin-top: 20px;">
+                📺 <b>TV Tip:</b> Use Arrow Keys to move, OK to select.
+            </p>
+        </div>
+
+        <div id="view-avatar" class="view-section hidden">
+            <h2 id="avatar-title">Player 1: Pick!</h2>
+            <div class="avatar-grid">
+                <div class="avatar-option nav-item draw-new-btn" onclick="openDrawingTool()" tabindex="0">🎨</div>
+                <div class="avatar-option nav-item" onclick="selectPreMade('slime')" tabindex="0"><div class="avatar-wrapper"><div class="mon-slime"></div></div></div>
+            </div>
+        </div>
+
+        <div id="view-drawing" class="view-section hidden">
+            <div class="giggle-bot-area">
+                <div class="bot-avatar" id="bot-face">🤨</div>
+                <div class="speech-bubble" id="bot-text">Use Arrows to move brush!</div>
+            </div>
+            <div class="canvas-wrapper" id="canvas-container">
+                <canvas id="paintCanvas" width="300" height="300"></canvas>
+                <div id="tv-cursor"></div>
+            </div>
+            <div class="tools-panel">
+                <div class="palette">
+                    <div class="color-swatch nav-item active" style="background:#000000" onclick="setColor('black', this)" tabindex="0"></div>
+                    <div class="color-swatch nav-item" style="background:#795548" onclick="setColor('brown', this)" tabindex="0"></div>
+                    <div class="color-swatch nav-item" style="background:#ff4757" onclick="setColor('red', this)" tabindex="0"></div>
+                    <div class="color-swatch nav-item" style="background:#2ed573" onclick="setColor('green', this)" tabindex="0"></div>
+                    <div class="color-swatch nav-item" style="background:#3742fa" onclick="setColor('blue', this)" tabindex="0"></div>
+                </div>
+            </div>
+            <div style="margin-top: 15px;">
+                <button class="btn btn-red nav-item" onclick="clearCanvas()" tabindex="0">Clear</button>
+                <button class="btn btn-green nav-item" onclick="saveDrawing()" tabindex="0">Finish!</button>
+            </div>
+            <p style="font-size: 0.8rem; color:#888;">TV: Press OK to toggle Paint on/off.</p>
+        </div>
+
+        <div id="view-game" class="view-section hidden">
+            <div class="scoreboard">
+                <div class="score-box">
+                    <span id="p1-name">P1</span><br><span class="score-val" id="score-p1">0</span>
+                </div>
+                <div class="score-box">
+                    <span id="p2-name">P2</span><br><span class="score-val" id="score-p2">0</span>
+                </div>
+            </div>
+            <h3 id="status-text">Start!</h3>
+            <div class="board" id="board"></div>
+            <button class="btn btn-blue nav-item" onclick="restartGame()" tabindex="0">Play Again</button>
+            <button class="btn btn-red nav-item" onclick="location.reload()" tabindex="0">Exit</button>
+        </div>
+
+    </div>
+
+    <script>
+        const state = {
+            mode: '', turn: 'p1', setupPlayer: 1,
+            p1: { html: '' }, p2: { html: '' },
+            board: Array(9).fill(''), active: false, scores: { p1: 0, p2: 0 }
+        };
+        const premades = { 'slime': '<div class="mon-slime"></div>' };
+
+        /* --- TV NAVIGATION --- */
+        let currentFocusIndex = 0;
+        let navItems = [];
+        function updateNavList() {
+            navItems = Array.from(document.querySelectorAll('.view-section:not(.hidden) .nav-item'));
+            currentFocusIndex = 0; if(navItems.length > 0) setFocus(0);
+        }
+        function setFocus(index) {
+            navItems.forEach(el => el.classList.remove('tv-focused'));
+            if(navItems[index]) { navItems[index].classList.add('tv-focused'); navItems[index].focus(); }
+        }
+        document.addEventListener('keydown', (e) => {
+            if(navItems.length === 0 && !isDrawingMode) return;
+            if(!document.getElementById('view-drawing').classList.contains('hidden')) {
+                handleTvDrawing(e);
+                if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) return;
+            }
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                currentFocusIndex = (currentFocusIndex + 1) % navItems.length; setFocus(currentFocusIndex);
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                currentFocusIndex = (currentFocusIndex - 1 + navItems.length) % navItems.length; setFocus(currentFocusIndex);
+            } else if (e.key === 'Enter') {
+                navItems[currentFocusIndex].click();
+            }
+        });
+
+        /* --- VIEW MANAGEMENT --- */
+        function switchView(id) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            setTimeout(updateNavList, 100);
+        }
+        function setMode(m) {
+            state.mode = m; state.setupPlayer = 1; switchView('view-avatar');
+            document.getElementById('avatar-title').innerText = "Player 1: Pick!";
+        }
+        function selectPreMade(key) { finishSetup(`<div class="avatar-wrapper">${premades[key]}</div>`); }
+        function finishSetup(html) {
+            if(state.setupPlayer === 1) {
+                state.p1.html = html;
+                if(state.mode === 'pvc') {
+                    state.p2.html = `<div class="avatar-wrapper">${premades['slime']}</div>`;
+                    document.getElementById('p2-name').innerText = "Smart Bot";
+                    startGame();
+                } else {
+                    state.setupPlayer = 2; switchView('view-avatar');
+                    document.getElementById('avatar-title').innerText = "Player 2: Pick!";
+                }
+            } else { state.p2.html = html; startGame(); }
+        }
+
+        /* --- DRAWING --- */
+        const canvas = document.getElementById('paintCanvas');
+        const ctx = canvas.getContext('2d');
+        const tvCursor = document.getElementById('tv-cursor');
+        let isDrawingMode = false, tvBrushActive = false, tvX = 150, tvY = 150, currentColor = 'black', strokeCount = 0;
+        
+        function openDrawingTool() { switchView('view-drawing'); clearCanvas(); isDrawingMode = true; tvCursor.style.display = 'block'; updateTvCursor(); }
+        function setColor(c, btn) { currentColor = c; document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('active')); btn.classList.add('active'); }
+        
+        let mouseDrawing = false;
+        canvas.addEventListener('mousedown', (e) => startStroke(e.offsetX, e.offsetY));
+        canvas.addEventListener('mousemove', (e) => { if(mouseDrawing) drawTo(e.offsetX, e.offsetY); });
+        canvas.addEventListener('mouseup', endStroke);
+        canvas.addEventListener('touchstart', (e) => { const r = canvas.getBoundingClientRect(); startStroke(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top); });
+        canvas.addEventListener('touchmove', (e) => { const r = canvas.getBoundingClientRect(); if(mouseDrawing) drawTo(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top); e.preventDefault(); });
+        canvas.addEventListener('touchend', endStroke);
+
+        function startStroke(x, y) { mouseDrawing = true; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.strokeStyle = currentColor; }
+        function drawTo(x, y) { ctx.lineTo(x, y); ctx.stroke(); strokeCount++; }
+        function endStroke() { mouseDrawing = false; ctx.beginPath(); }
+        
+        function handleTvDrawing(e) {
+            const speed = 15; let moved = false;
+            if(e.key === 'ArrowUp') { tvY -= speed; moved = true; }
+            if(e.key === 'ArrowDown') { tvY += speed; moved = true; }
+            if(e.key === 'ArrowLeft') { tvX -= speed; moved = true; }
+            if(e.key === 'ArrowRight') { tvX += speed; moved = true; }
+            tvX = Math.max(0, Math.min(300, tvX)); tvY = Math.max(0, Math.min(300, tvY));
+            if(moved) { updateTvCursor(); if(tvBrushActive) { ctx.lineTo(tvX, tvY); ctx.stroke(); } else { ctx.moveTo(tvX, tvY); } }
+            if(e.key === 'Enter') {
+                const focused = document.querySelector('.tv-focused');
+                if(!focused || focused.tagName !== 'BUTTON' && !focused.classList.contains('color-swatch')) {
+                    tvBrushActive = !tvBrushActive;
+                    tvCursor.style.backgroundColor = tvBrushActive ? currentColor : 'transparent';
+                    tvCursor.style.border = tvBrushActive ? 'none' : '2px solid red';
+                    if(tvBrushActive) { ctx.beginPath(); ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.strokeStyle = currentColor; ctx.moveTo(tvX, tvY); } else { ctx.beginPath(); }
+                }
+            }
+        }
+        function updateTvCursor() { tvCursor.style.left = tvX + 'px'; tvCursor.style.top = tvY + 'px'; }
+        function clearCanvas() { ctx.clearRect(0, 0, 300, 300); strokeCount = 0; }
+        function saveDrawing() { isDrawingMode = false; finishSetup(`<div class="avatar-wrapper"><img src="${canvas.toDataURL()}" class="custom-drawing"></div>`); }
+
+        /* --- GAME LOGIC (WITH AI) --- */
+        const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+        function startGame() {
+            switchView('view-game');
+            state.board.fill(''); state.active = true; state.turn = 'p1';
+            renderBoard();
+            document.getElementById('status-text').innerText = "Player 1's Turn";
+        }
+        function restartGame() { startGame(); }
+        function renderBoard() {
+            const el = document.getElementById('board'); el.innerHTML = '';
+            state.board.forEach((cell, i) => {
+                const div = document.createElement('div'); div.className = 'cell nav-item'; div.tabIndex = 0;
+                div.onclick = () => move(i);
+                div.addEventListener('keydown', (e) => { if(e.key === 'Enter') move(i); });
+                if(cell === 'p1') div.innerHTML = state.p1.html;
+                if(cell === 'p2') div.innerHTML = state.p2.html;
+                if(cell !== '') div.classList.add('taken');
+                el.appendChild(div);
+            });
+            updateNavList();
+        }
+
+        function move(i) {
+            if(!state.active || state.board[i] !== '') return;
+            state.board[i] = state.turn;
+            renderBoard();
+            if(checkWin(state.turn)) { endGame(state.turn); return; }
+            if(!state.board.includes('')) { endGame('draw'); return; }
+            state.turn = state.turn === 'p1' ? 'p2' : 'p1';
+            document.getElementById('status-text').innerText = state.turn === 'p1' ? "Player 1's Turn" : "Smart Bot's Turn";
+            if(state.mode === 'pvc' && state.turn === 'p2') { setTimeout(computerMove, 500); }
+        }
+
+        /* --- UNBEATABLE AI (MINIMAX) --- */
+        function computerMove() {
+            if(!state.active) return;
+            // 10% chance to make a random mistake so kids have a tiny chance
+            if (Math.random() < 0.1) {
+                const empty = state.board.map((v, i) => v === '' ? i : null).filter(v => v !== null);
+                move(empty[Math.floor(Math.random() * empty.length)]);
+            } else {
+                // Optimal Play
+                const bestMove = getBestMove(state.board);
+                move(bestMove);
+            }
+        }
+
+        function getBestMove(board) {
+            let bestScore = -Infinity;
+            let move = -1;
+            for(let i = 0; i < 9; i++) {
+                if(board[i] === '') {
+                    board[i] = 'p2'; // AI move
+                    let score = minimax(board, 0, false);
+                    board[i] = ''; // Undo
+                    if(score > bestScore) {
+                        bestScore = score;
+                        move = i;
+                    }
+                }
+            }
+            return move;
+        }
+
+        function minimax(board, depth, isMaximizing) {
+            // Check terminal states
+            if (checkWin('p2')) return 10 - depth; // AI wins
+            if (checkWin('p1')) return depth - 10; // Human wins
+            if (!board.includes('')) return 0; // Draw
+
+            if (isMaximizing) {
+                let bestScore = -Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === '') {
+                        board[i] = 'p2';
+                        let score = minimax(board, depth + 1, false);
+                        board[i] = '';
+                        bestScore = Math.max(score, bestScore);
+                    }
+                }
+                return bestScore;
+            } else {
+                let bestScore = Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === '') {
+                        board[i] = 'p1';
+                        let score = minimax(board, depth + 1, true);
+                        board[i] = '';
+                        bestScore = Math.min(score, bestScore);
+                    }
+                }
+                return bestScore;
+            }
+        }
+
+        function checkWin(p) {
+            return lines.some(l => state.board[l[0]]===p && state.board[l[1]]===p && state.board[l[2]]===p);
+        }
+
+        function endGame(winner) {
+            state.active = false;
+            const status = document.getElementById('status-text');
+            const cells = document.querySelectorAll('.cell');
+            if(winner === 'draw') {
+                status.innerText = "It's a Draw! 💦";
+                cells.forEach(c => { if(c.innerHTML) triggerSink(c); });
+            } else {
+                status.innerText = (winner === 'p1' ? "Player 1" : "Smart Bot") + " Wins! 🎉";
+                state.scores[winner]++;
+                document.getElementById(`score-${winner}`).innerText = state.scores[winner];
+                cells.forEach((c, i) => {
+                    if(state.board[i] === winner) c.querySelector('.avatar-wrapper').classList.add('winner-anim');
+                    else if(state.board[i]) triggerSink(c);
+                });
+            }
+        }
+
+        function triggerSink(el) {
+            const w = el.querySelector('.avatar-wrapper');
+            if(w) { w.classList.add('sinking-anim'); const p = document.createElement('div'); p.className = 'puddle'; el.appendChild(p); }
+        }
+    </script>
+</body>
+</html>
