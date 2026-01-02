@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake & Ladder Party - Multicolor</title>
+    <style>
+        :root {
+            --bg-color: #81ecec;
+            --c1: #ff7675; --c2: #ffeaa7; --c3: #74b9ff; --c4: #55efc4;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh;
+            touch-action: manipulation;
+        }
+
+        /* --- SETUP SCREEN --- */
+        #setup-screen {
+            background: white;
+            padding: 20px;
+            width: 95%; max-width: 500px;
+            margin-top: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex; flex-direction: column; align-items: center;
+            z-index: 100;
+        }
+
+        .player-controls {
+            display: flex; gap: 10px; margin: 15px 0;
+            background: #f1f2f6; padding: 5px; border-radius: 50px;
+        }
+
+        .count-btn {
+            border: none; background: transparent; padding: 10px 20px;
+            border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 1.1rem;
+        }
+        .count-btn.active { background: #6c5ce7; color: white; shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+        .players-container {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+            width: 100%; margin-bottom: 20px;
+        }
+
+        .player-card {
+            background: #f8f9fa; border: 2px solid #ccc;
+            border-radius: 15px; padding: 10px;
+            display: flex; flex-direction: column; align-items: center;
+            width: 110px;
+        }
+
+        .player-card input {
+            width: 90%; text-align: center; border: 1px solid #ddd; border-radius: 5px;
+            margin-bottom: 5px; font-family: inherit; font-weight: bold;
+        }
+
+        canvas {
+            background: white; border: 2px dashed #b2bec3; border-radius: 50%;
+            cursor: crosshair; touch-action: none;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
+        }
+
+        .palette { display: flex; gap: 5px; margin-top: 5px; }
+        .color-dot { width: 18px; height: 18px; border-radius: 50%; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); }
+
+        .start-btn {
+            background: #00b894; color: white; border: none; padding: 15px 40px;
+            font-size: 1.3rem; border-radius: 50px; cursor: pointer; font-weight: bold;
+            box-shadow: 0 5px 0 #008f72; width: 80%;
+        }
+        .start-btn:active { transform: translateY(5px); box-shadow: none; }
+
+        /* --- GAME SCREEN --- */
+        #game-screen { display: none; flex-direction: column; align-items: center; width: 100%; padding-top: 10px; }
+
+        .board-frame {
+            position: relative;
+            width: 95vw; height: 95vw; /* Responsive square */
+            max-width: 500px; max-height: 500px;
+            background: white;
+            border: 8px solid #636e72; border-radius: 12px;
+            box-shadow: 0 15px 0 rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            width: 100%; height: 100%;
+        }
+
+        .cell {
+            border: 0.5px solid rgba(0,0,0,0.05);
+            font-size: 10px; font-weight: bold; color: rgba(0,0,0,0.3);
+            display: flex; justify-content: flex-start; padding: 1px;
+        }
+        .cell:nth-child(4n+1) { background-color: var(--c1); }
+        .cell:nth-child(4n+2) { background-color: var(--c2); }
+        .cell:nth-child(4n+3) { background-color: var(--c3); }
+        .cell:nth-child(4n+0) { background-color: var(--c4); }
+        
+        #graphics { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        #tokens-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20; }
+
+        /* Token Styles */
+        .token {
+            width: 7%; height: 7%; /* Responsive size */
+            position: absolute; transition: all 0.5s cubic-bezier(0.5, 0, 0.5, 1);
+            filter: drop-shadow(0px 3px 2px rgba(0,0,0,0.4));
+        }
+        .token img { width: 100%; height: 100%; border-radius: 50%; background: white; border: 2px solid white; }
+
+        /* --- CONTROLS (The Dice) --- */
+        .controls-area {
+            background: white; padding: 10px 20px;
+            border-radius: 20px; width: 90%; max-width: 450px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            border: 4px solid #b2bec3;
+        }
+        
+        .turn-info { display: flex; flex-direction: column; }
+        #turn-label { font-size: 0.9rem; color: #888; }
+        #turn-name { font-size: 1.4rem; font-weight: bold; }
+
+        /* BIG VISIBLE DICE BUTTON */
+        .dice-btn {
+            background: white;
+            border: 3px solid #636e72;
+            border-radius: 15px;
+            width: 80px; height: 80px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #636e72;
+            transition: transform 0.1s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .dice-btn:active { transform: translateY(5px); box-shadow: none; }
+        
+        #dice-icon { font-size: 40px; line-height: 40px; }
+        .dice-text { font-size: 12px; font-weight: bold; color: #636e72; margin-top: 2px; }
+
+        .shake { animation: shake 0.5s infinite; }
+        @keyframes shake { 0%{transform:rotate(0deg);} 25%{transform:rotate(20deg);} 75%{transform:rotate(-20deg);} }
+
+        /* Overlays */
+        #reaction-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 80px; pointer-events: none; z-index: 100;
+            opacity: 0; transition: opacity 0.2s;
+        }
+        .pop-anim { animation: popIn 1.5s forwards; }
+        @keyframes popIn {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+        }
+
+        #game-msg {
+            text-align: center; font-weight: bold; color: #2d3436; margin-top: 10px; min-height: 20px;
+        }
+
+        /* Win Screen */
+        #win-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 200; display: none;
+            flex-direction: column; justify-content: center; align-items: center; color: white;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen">
+        <h2 style="color:#6c5ce7; margin:10px 0;">🎨 Player Setup</h2>
+        
+        <div class="player-controls">
+            <button class="count-btn active" onclick="setPlayerCount(2)">2 Players</button>
+            <button class="count-btn" onclick="setPlayerCount(3)">3 Players</button>
+            <button class="count-btn" onclick="setPlayerCount(4)">4 Players</button>
+        </div>
+
+        <div id="players-container" class="players-container"></div>
+
+        <button class="start-btn" onclick="startGame()">START GAME ▶</button>
+    </div>
+
+    <div id="game-screen">
+        <div class="board-frame">
+            <div id="grid"></div>
+            <svg id="graphics" viewBox="0 0 500 500"></svg>
+            <div id="tokens-layer"></div>
+            <div id="reaction-overlay"></div>
+        </div>
+
+        <div class="controls-area">
+            <div class="turn-info">
+                <span id="turn-label">CURRENT TURN</span>
+                <span id="turn-name">Player 1</span>
+            </div>
+            
+            <div class="dice-btn" onclick="rollDice()">
+                <div id="dice-icon">🎲</div>
+                <div class="dice-text">ROLL</div>
+            </div>
+        </div>
+        <div id="game-msg">Ready to play!</div>
+    </div>
+
+    <div id="win-screen">
+        <h1 style="font-size: 3rem; margin: 0;">🏆 WINNER! 🏆</h1>
+        <h2 id="winner-name" style="font-size: 2rem; color: #ffeaa7;">Player Name</h2>
+        <div style="font-size: 5rem; margin: 20px;">🎉 🥳 🎈</div>
+        <button class="start-btn" style="background: white; color: #00b894;" onclick="location.reload()">Play Again</button>
+    </div>
+
+<script>
+    // --- CONFIG ---
+    const COLORS = ['#d63031', '#0984e3', '#00b894', '#6c5ce7'];
+    const SNAKES = { 98:12, 83:58, 65:36, 51:22, 29:7, 17:4 };
+    const LADDERS = { 3:24, 9:30, 40:62, 54:85, 72:91 };
+    
+    // NEW: Snake Color Palettes (Body Color, Spot Color)
+    const SNAKE_PALETTES = [
+        { body: '#ff7675', spots: '#d63031' }, // Red/Dark Red
+        { body: '#55efc4', spots: '#00b894' }, // Mint/Tealish
+        { body: '#a29bfe', spots: '#6c5ce7' }, // Purple/Dark Purple
+        { body: '#ffeaa7', spots: '#fdcb6e' }, // Yellow/Orange
+        { body: '#74b9ff', spots: '#0984e3' }  // Light Blue/Dark Blue
+    ];
+
+    let playerCount = 2;
+    let players = [];
+    let turnIndex = 0;
+    let isLocked = false;
+    let canvasCtx = {};
+    let penColors = {};
+
+    // --- SETUP ---
+    function setPlayerCount(n) {
+        playerCount = n;
+        document.querySelectorAll('.count-btn').forEach((b, i) => b.classList.toggle('active', i === (n-2)));
+        renderCards();
+    }
+
+    function renderCards() {
+        const con = document.getElementById('players-container');
+        con.innerHTML = '';
+        for(let i=1; i<=playerCount; i++) {
+            const div = document.createElement('div');
+            div.className = 'player-card';
+            div.style.borderColor = COLORS[i-1];
+            div.innerHTML = `
+                <input type="text" id="n-${i}" value="Player ${i}" style="color:${COLORS[i-1]}">
+                <canvas id="cvs-${i}" width="80" height="80"></canvas>
+                <div class="palette">
+                    <div class="color-dot" style="background:${COLORS[i-1]}" onclick="setPen(${i}, '${COLORS[i-1]}')"></div>
+                    <div class="color-dot" style="background:black" onclick="setPen(${i}, 'black')"></div>
+                    <div class="color-dot" style="background:white; border:1px solid #999; font-size:10px; display:grid; place-items:center;" onclick="clearCvs(${i})">❌</div>
+                </div>
+            `;
+            con.appendChild(div);
+            setTimeout(()=>initCvs(i), 0);
+        }
+    }
+
+    function initCvs(id) {
+        const c = document.getElementById(`cvs-${id}`);
+        const ctx = c.getContext('2d');
+        canvasCtx[id] = ctx;
+        penColors[id] = COLORS[id-1];
+        
+        ctx.lineWidth = 3; ctx.lineCap = 'round';
+        let draw = false;
+
+        const start = (e) => {
+            draw = true; ctx.beginPath(); ctx.strokeStyle = penColors[id];
+            const rect = c.getBoundingClientRect();
+            const x = (e.touches?e.touches[0].clientX:e.clientX) - rect.left;
+            const y = (e.touches?e.touches[0].clientY:e.clientY) - rect.top;
+            ctx.moveTo(x,y); e.preventDefault();
+        };
+        const move = (e) => {
+            if(!draw) return;
+            const rect = c.getBoundingClientRect();
+            const x = (e.touches?e.touches[0].clientX:e.clientX) - rect.left;
+            const y = (e.touches?e.touches[0].clientY:e.clientY) - rect.top;
+            ctx.lineTo(x,y); ctx.stroke(); e.preventDefault();
+        };
+        const end = () => draw = false;
+
+        c.onmousedown=start; c.onmousemove=move; c.onmouseup=end;
+        c.ontouchstart=start; c.ontouchmove=move; c.ontouchend=end;
+    }
+
+    function setPen(id, col) { penColors[id] = col; }
+    function clearCvs(id) { 
+        const ctx = canvasCtx[id];
+        ctx.clearRect(0,0,100,100); 
+    }
+
+    // --- GAME INIT ---
+    function startGame() {
+        players = [];
+        const tLayer = document.getElementById('tokens-layer');
+        tLayer.innerHTML = '';
+        
+        for(let i=1; i<=playerCount; i++) {
+            const name = document.getElementById(`n-${i}`).value;
+            const cvs = document.getElementById(`cvs-${i}`);
+            
+            const t = document.createElement('div');
+            t.className = 'token'; t.id = `t-${i}`;
+            const img = document.createElement('img');
+            img.src = cvs.toDataURL();
+            img.style.borderColor = COLORS[i-1];
+            t.appendChild(img);
+            tLayer.appendChild(t);
+            
+            players.push({ id:i, name:name, pos:1, color:COLORS[i-1] });
+        }
+
+        document.getElementById('setup-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'flex';
+        
+        createGrid();
+        drawMap();
+        updateUI();
+        players.forEach((p,i) => moveVisual(i));
+    }
+
+    // --- BOARD ---
+    function createGrid() {
+        const g = document.getElementById('grid');
+        for(let r=9; r>=0; r--) {
+            for(let c=0; c<10; c++) {
+                let n = r%2===0 ? r*10+c+1 : r*10+(9-c)+1;
+                let d = document.createElement('div');
+                d.className='cell'; d.innerText=n;
+                if(n===1) d.id='c-1'; if(n===100) d.id='c-100';
+                g.appendChild(d);
+            }
+        }
+    }
+    
+    function getXY(num) {
+        if(num<1)num=1; if(num>100)num=100;
+        let r = Math.floor((num-1)/10);
+        let c = (num-1)%10;
+        if(r%2!==0) c=9-c;
+        // Board is 500x500 internal SVG units
+        return { x: c*50+25, y: (9-r)*50+25 };
+    }
+
+    function drawMap() {
+        let svg = document.getElementById('graphics');
+        let html = '';
+        
+        // Ladders
+        for(let [s,e] of Object.entries(LADDERS)) {
+            let p1=getXY(parseInt(s)), p2=getXY(e);
+            html += `<line x1="${p1.x-6}" y1="${p1.y}" x2="${p2.x-6}" y2="${p2.y}" stroke="#8d6e63" stroke-width="5" stroke-linecap="round"/>`;
+            html += `<line x1="${p1.x+6}" y1="${p1.y}" x2="${p2.x+6}" y2="${p2.y}" stroke="#8d6e63" stroke-width="5" stroke-linecap="round"/>`;
+            let steps = Math.ceil(Math.abs(p2.y-p1.y)/12);
+            for(let i=0; i<=steps; i++) {
+                let t = i/steps;
+                let lx = (p1.x-6)+((p2.x-6)-(p1.x-6))*t;
+                let ly = p1.y+(p2.y-p1.y)*t;
+                html += `<line x1="${lx}" y1="${ly}" x2="${lx+12}" y2="${ly}" stroke="#5d4037" stroke-width="3"/>`;
+            }
+        }
+
+        // Snakes (Multicolor)
+        let snakeIdx = 0;
+        for(let [s,e] of Object.entries(SNAKES)) {
+            let p1=getXY(parseInt(s)), p2=getXY(e);
+            let mx=(p1.x+p2.x)/2, my=(p1.y+p2.y)/2;
+            let cpx = mx < 250 ? mx+70 : mx-70; // Curve direction
+            
+            // Get palette based on index loop
+            let palette = SNAKE_PALETTES[snakeIdx % SNAKE_PALETTES.length];
+            snakeIdx++;
+
+            let d = `M ${p1.x} ${p1.y} Q ${cpx} ${my} ${p2.x} ${p2.y}`;
+            // Body with palette color
+            html += `<path d="${d}" stroke="${palette.body}" stroke-width="14" fill="none" stroke-linecap="round"/>`;
+            // Spots with palette color
+            html += `<path d="${d}" stroke="${palette.spots}" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="0,15"/>`;
+            
+            // Eyes remain white/black
+            html += `<circle cx="${p1.x-4}" cy="${p1.y-4}" r="3" fill="white"/><circle cx="${p1.x+4}" cy="${p1.y-4}" r="3" fill="white"/>`;
+            html += `<circle cx="${p1.x-4}" cy="${p1.y-4}" r="1" fill="black"/><circle cx="${p1.x+4}" cy="${p1.y-4}" r="1" fill="black"/>`;
+        }
+        svg.innerHTML = html;
+    }
+
+    // --- LOGIC ---
+    function rollDice() {
+        if(isLocked) return;
+        isLocked = true;
+        
+        let icon = document.getElementById('dice-icon');
+        let btn = document.querySelector('.dice-btn');
+        btn.classList.add('shake');
+        
+        setTimeout(() => {
+            btn.classList.remove('shake');
+            let roll = Math.floor(Math.random()*6)+1;
+            icon.innerText = '🎲 ' + roll; // Show number
+            processMove(roll);
+        }, 500);
+    }
+
+    function processMove(steps) {
+        let p = players[turnIndex];
+        let next = p.pos + steps;
+        
+        updateMsg(`${p.name} rolls ${steps}...`);
+
+        if(next <= 100) {
+            p.pos = next;
+            moveVisual(turnIndex);
+            setTimeout(() => checkTile(p), 600);
+        } else {
+            updateMsg("Too high! Wait.");
+            setTimeout(nextTurn, 1000);
+        }
+    }
+
+    function checkTile(p) {
+        if(SNAKES[p.pos]) {
+            reaction('😢');
+            updateMsg("Oh no! Snake!");
+            setTimeout(() => {
+                p.pos = SNAKES[p.pos];
+                moveVisual(turnIndex);
+                setTimeout(checkWin, 800);
+            }, 1000);
+        } else if(LADDERS[p.pos]) {
+            reaction('🎉');
+            updateMsg("Yay! Ladder!");
+            setTimeout(() => {
+                p.pos = LADDERS[p.pos];
+                moveVisual(turnIndex);
+                setTimeout(checkWin, 800);
+            }, 1000);
+        } else {
+            checkWin();
+        }
+    }
+
+    function checkWin() {
+        if(players[turnIndex].pos === 100) {
+            document.getElementById('winner-name').innerText = players[turnIndex].name;
+            document.getElementById('win-screen').style.display = 'flex';
+            setInterval(() => reaction('🥳'), 400); // Continuous confetti
+        } else {
+            nextTurn();
+        }
+    }
+
+    function nextTurn() {
+        turnIndex = (turnIndex + 1) % playerCount;
+        updateUI();
+        document.getElementById('dice-icon').innerText = '🎲';
+        isLocked = false;
+    }
+
+    function updateUI() {
+        let p = players[turnIndex];
+        let nameEl = document.getElementById('turn-name');
+        nameEl.innerText = p.name;
+        nameEl.style.color = p.color;
+    }
+    
+    function updateMsg(txt) { document.getElementById('game-msg').innerText = txt; }
+
+    function moveVisual(idx) {
+        let p = players[idx];
+        let el = document.getElementById(`t-${p.id}`);
+        let c = getXY(p.pos);
+        
+        // Offset so players don't completely overlap
+        let ox = 0, oy = 0;
+        if(idx===0) { ox = -3; oy = -3; }
+        if(idx===1) { ox = 3; oy = -3; }
+        if(idx===2) { ox = -3; oy = 3; }
+        if(idx===3) { ox = 3; oy = 3; }
+
+        // Convert 500px coords to percentages for responsiveness
+        let leftPct = ((c.x + ox - 20) / 500) * 100; // -20 is roughly half token size adjustment
+        let topPct = ((c.y + oy - 30) / 500) * 100;
+
+        el.style.left = leftPct + '%';
+        el.style.top = topPct + '%';
+    }
+
+    function reaction(emoji) {
+        let ov = document.getElementById('reaction-overlay');
+        ov.innerText = emoji;
+        ov.classList.remove('pop-anim');
+        void ov.offsetWidth;
+        ov.classList.add('pop-anim');
+    }
+    
+    // Init
+    renderCards();
+    
+    // Resize fix
+    window.addEventListener('resize', () => {
+        players.forEach((p,i) => moveVisual(i));
+    });
+
+</script>
+</body>
+</html>

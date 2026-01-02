@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Instant Guess Bot</title>
+    <style>
+        :root {
+            --bg: #ffeaa7;
+            --bubble: #fff;
+            --text: #2d3436;
+            --accent: #6c5ce7;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: var(--bg);
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column; align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* --- BOT SECTION (The Big Button) --- */
+        .bot-container {
+            width: 100%; padding: 10px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: #fab1a0; box-shadow: 0 5px 0 rgba(0,0,0,0.1);
+            z-index: 50; 
+            transition: background 0.3s, transform 0.1s; 
+            min-height: 140px;
+            flex-shrink: 0;
+            cursor: pointer; /* Shows it is clickable */
+            position: relative;
+            overflow: hidden;
+        }
+        /* Visual feedback when tapped */
+        .bot-container:active { transform: scale(0.98); filter: brightness(1.1); }
+        
+        .bot-container.thinking { background: #74b9ff; }
+        .bot-container.celebrating { background: #55efc4; }
+
+        /* Tap Hint Label */
+        .tap-hint {
+            position: absolute; top: 5px; right: 10px;
+            font-size: 0.7rem; color: rgba(0,0,0,0.4); font-weight: bold;
+            pointer-events: none;
+        }
+
+        .bot-avatar {
+            font-size: 50px; line-height: 50px;
+            filter: drop-shadow(0 3px 3px rgba(0,0,0,0.2)); 
+            pointer-events: none; /* Let clicks pass to container */
+        }
+        .bot-avatar.bounce { animation: bounce 0.6s infinite; }
+
+        .speech-bubble {
+            background: var(--bubble); color: var(--text); padding: 12px 20px;
+            border-radius: 20px; font-size: 1.1rem; font-weight: bold; text-align: center;
+            position: relative; margin-top: 10px; max-width: 90%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: all 0.3s;
+            pointer-events: none;
+        }
+        .speech-bubble::after {
+            content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+            border: 10px solid transparent; border-bottom-color: var(--bubble);
+        }
+        .speech-bubble.thought { font-style: italic; color: #636e72; background: #dfe6e9; }
+        .speech-bubble.thought::after { border-bottom-color: #dfe6e9; }
+        .speech-bubble b { color: #d63031; font-size: 1.3rem; }
+
+        /* --- CANVAS --- */
+        .canvas-wrapper {
+            flex-grow: 1; width: 95%; margin: 10px; background: white;
+            border-radius: 20px; border: 6px solid var(--accent);
+            position: relative; overflow: hidden;
+            touch-action: none;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            z-index: 1;
+        }
+        canvas { 
+            width: 100%; height: 100%; 
+            display: block; 
+            touch-action: none; 
+        }
+
+        /* --- UI OVERLAYS --- */
+        .feedback-ui {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 20px; z-index: 50; width: 100%; justify-content: center;
+            visibility: hidden; pointer-events: none; opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .feedback-ui.visible { visibility: visible; pointer-events: auto; opacity: 1; }
+
+        .fb-btn {
+            font-size: 1.5rem; padding: 15px 30px; border-radius: 50px;
+            border: 4px solid white; cursor: pointer; font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: transform 0.1s;
+        }
+        .btn-yes { background: #00b894; color: white; }
+        .btn-no { background: #d63031; color: white; }
+        .fb-btn:active { transform: scale(0.9); }
+
+        /* Correction Input */
+        .correction-ui {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.98); 
+            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 60;
+        }
+        .correction-ui h2 { margin: 0 0 15px 0; color: var(--accent); }
+        .correction-ui input {
+            font-size: 1.5rem; padding: 10px; border-radius: 10px; border: 3px solid var(--accent);
+            text-align: center; width: 70%; margin-bottom: 20px; font-family: inherit;
+        }
+        .btn-submit {
+            background: var(--accent); color: white; padding: 12px 40px; border: none;
+            border-radius: 30px; font-size: 1.2rem; cursor: pointer;
+        }
+
+        /* Share Overlay */
+        .share-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 100;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .share-card {
+            background: white; padding: 20px; border-radius: 20px;
+            text-align: center; max-width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .share-card img {
+            max-width: 100%; max-height: 50vh; border: 2px solid #ddd;
+            border-radius: 10px; background: white;
+        }
+        .share-actions { margin-top: 10px; display: flex; gap: 10px; justify-content: center; }
+        .btn-share { background: #00b894; color: white; }
+        .btn-close { background: #d63031; color: white; }
+
+        /* --- TOOLBAR --- */
+        .toolbar {
+            display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center;
+            background: white; padding: 10px 15px; border-radius: 30px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1); margin-bottom: 10px; max-width: 98%;
+            z-index: 20; flex-shrink: 0;
+        }
+        .color-btn {
+            width: 34px; height: 34px; border-radius: 50%;
+            border: 2px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer; transition: transform 0.1s; position: relative; overflow: hidden;
+            background-clip: padding-box;
+        }
+        .color-btn.active { transform: scale(1.15); border-color: #2d3436; border-width: 3px; z-index: 2; }
+        
+        input[type="color"] {
+            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            opacity: 0; cursor: pointer; padding: 0; margin: 0;
+        }
+        .picker-icon {
+            width: 100%; height: 100%; 
+            background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+        }
+
+        .btn-sm {
+            border: none; padding: 8px 15px; border-radius: 20px;
+            font-family: inherit; font-weight: bold; cursor: pointer; font-size: 0.9rem;
+            background: #ff7675; color: white;
+        }
+
+        @keyframes bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
+        .pop { animation: pop 0.3s ease-out; }
+        @keyframes pop { 0%{transform: scale(0.8);} 50%{transform: scale(1.1);} 100%{transform: scale(1);} }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+    <div class="bot-container" id="bot-bg" onpointerdown="forceGuess(event)">
+        <div class="tap-hint">(Tap here to guess!)</div>
+        <div class="bot-avatar" id="bot-face">👀</div>
+        <div class="speech-bubble" id="bot-text">Draw something! I'm watching...</div>
+    </div>
+
+    <div class="canvas-wrapper" id="c-wrap">
+        <canvas id="canvas"></canvas>
+        
+        <div class="feedback-ui" id="feedback">
+            <button class="fb-btn btn-yes" onpointerdown="answerYes()">YES! ✅</button>
+            <button class="fb-btn btn-no" onpointerdown="answerNo()">NO ❌</button>
+        </div>
+
+        <div class="correction-ui" id="correction">
+            <h2>What is it then?</h2>
+            <input type="text" id="real-answer" placeholder="e.g. Dog" autocomplete="off">
+            <button class="btn-submit" onclick="submitCorrection()">Tell Bot</button>
+        </div>
+    </div>
+
+    <div class="toolbar">
+        <div class="color-btn active" style="background:black" onpointerdown="pen('black', this)"></div>
+        <div class="color-btn" style="background:#d63031" onpointerdown="pen('#d63031', this)"></div>
+        <div class="color-btn" style="background:#e17055" onpointerdown="pen('#e17055', this)"></div>
+        <div class="color-btn" style="background:#fdcb6e" onpointerdown="pen('#fdcb6e', this)"></div>
+        <div class="color-btn" style="background:#55efc4" onpointerdown="pen('#55efc4', this)"></div>
+        <div class="color-btn" style="background:#74b9ff" onpointerdown="pen('#74b9ff', this)"></div>
+        <div class="color-btn" style="background:#a29bfe" onpointerdown="pen('#a29bfe', this)"></div>
+        <div class="color-btn" style="background:#fd79a8" onpointerdown="pen('#fd79a8', this)"></div>
+        <div class="color-btn" style="background:#8d6e63" onpointerdown="pen('#8d6e63', this)"></div>
+        
+        <div class="color-btn" id="picker-btn">
+            <div class="picker-icon"></div>
+            <input type="color" oninput="pickCustomColor(this)">
+        </div>
+
+        <div style="width:1px; height:30px; background:#ddd; margin: 0 5px;"></div>
+        <button class="btn-sm" onpointerdown="clearCanvas()">Erase</button>
+    </div>
+
+    <div class="share-overlay" id="shareScreen">
+        <div class="share-card">
+            <h2>✨ Masterpiece! ✨</h2>
+            <img id="final-image" src=""/>
+            <div class="share-actions">
+                <button class="btn-submit btn-share" onclick="shareImage()">Share 📤</button>
+                <button class="btn-submit btn-close" onclick="closeShare()">Close</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- GUESS DATABASE ---
+    const GUESSES = {
+        'yellow': ["a BANANA! 🍌", "Pikachu!", "Cheese! 🧀", "the Sun! ☀️", "a Lemon!"],
+        'green': ["a Pickle!", "Broccoli!", "an Alien!", "a Turtle!", "Green Slime!", "a Tree!"],
+        'red': ["a Tomato! 🍅", "a Fire Truck!", "an Apple!", "a Heart! ❤️", "Spiderman!"],
+        'blue': ["the Ocean! 🌊", "a Raindrop!", "a Blueberry!", "a Whale!", "Dory!"],
+        'purple': ["a Grape!", "an Eggplant!", "a Wizard Hat! 🧙‍♂️", "an Octopus!"],
+        'black': ["a Spider! 🕷️", "Batman!", "a Bowling Ball!", "a Mustache! 🥸", "a Panda!"],
+        'orange': ["an Orange! 🍊", "a Basketball!", "Nemo!", "a Carrot!", "a Tiger!"],
+        'pink': ["a Piggy! 🐷", "Cotton Candy!", "a Flamingo!", "Kirby!", "a Flower!"],
+        'brown': ["a Potato! 🥔", "Chocolate!", "a Bear! 🐻", "a Cookie!", "Poop emoji! 💩"],
+        'unknown': ["a Rainbow!", "something colorful!", "Abstract Art!"],
+        'tiny': ["a Bug! 🐞", "a Button!", "a Coin!", "a Cookie Crumb!"],
+        'messy': ["a Tornado! 🌪️", "Spaghetti!", "a Hairball!", "Fireworks!"]
+    };
+
+    const COLOR_MAP = {
+        '#fdcb6e': 'yellow', '#55efc4': 'green', '#d63031': 'red',
+        '#74b9ff': 'blue', '#a29bfe': 'purple', 'black': 'black',
+        '#e17055': 'orange', '#fd79a8': 'pink', '#8d6e63': 'brown'
+    };
+
+    // --- STATE ---
+    let canvas, ctx;
+    let currentColor = 'black';
+    let currentCategory = 'black';
+    let isDrawing = false;
+    let strokeCount = 0;
+    
+    // Timer State
+    let thinkTimer = null;
+    let botState = "watching"; 
+    let finalGuessWord = "";
+
+    // --- INIT ---
+    window.onload = () => {
+        canvas = document.getElementById('canvas');
+        ctx = canvas.getContext('2d', { alpha: false });
+        
+        resize();
+        window.addEventListener('resize', resize);
+        
+        // POINTER EVENTS
+        canvas.addEventListener('pointerdown', startDraw);
+        canvas.addEventListener('pointermove', draw);
+        canvas.addEventListener('pointerup', endDraw);
+        canvas.addEventListener('pointerleave', endDraw);
+        canvas.addEventListener('pointercancel', endDraw);
+    };
+
+    function resize() {
+        const wrap = document.getElementById('c-wrap');
+        let temp;
+        try { temp = ctx.getImageData(0,0,canvas.width, canvas.height); } catch(e){}
+        
+        canvas.width = wrap.offsetWidth;
+        canvas.height = wrap.offsetHeight;
+        
+        ctx.fillStyle = "white";
+        ctx.fillRect(0,0,canvas.width, canvas.height);
+        
+        if(temp) ctx.putImageData(temp, 0, 0);
+        
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 8;
+        ctx.strokeStyle = currentColor;
+    }
+
+    // --- DRAWING LOGIC ---
+    function startDraw(e) {
+        e.preventDefault(); 
+        
+        if(thinkTimer) clearTimeout(thinkTimer);
+        
+        // If guessing already, restart state
+        if(botState === "guessing" || botState === "celebrating") {
+             hideUI();
+             setBotState("watching");
+             say("Ooh, adding details?", "👀");
+        } else {
+             setBotState("watching");
+        }
+
+        isDrawing = true;
+        ctx.beginPath();
+        
+        const r = canvas.getBoundingClientRect();
+        ctx.moveTo(e.clientX - r.left, e.clientY - r.top);
+        
+        ctx.strokeStyle = currentColor;
+        ctx.lineWidth = 8;
+    }
+
+    function draw(e) {
+        if(!isDrawing) return;
+        e.preventDefault();
+
+        const r = canvas.getBoundingClientRect();
+        ctx.lineTo(e.clientX - r.left, e.clientY - r.top);
+        ctx.stroke();
+        
+        // Dot fix
+        ctx.beginPath();
+        ctx.moveTo(e.clientX - r.left, e.clientY - r.top);
+        
+        strokeCount++;
+    }
+
+    function endDraw(e) {
+        if(!isDrawing) return;
+        isDrawing = false;
+        ctx.closePath();
+
+        // Start Auto-Guess Timer
+        if(strokeCount > 5) {
+            setBotState("thinking");
+            thinkTimer = setTimeout(makeFinalGuess, 2500); 
+        }
+    }
+
+    // --- COLOR ---
+    function pen(col, el) {
+        if(thinkTimer) clearTimeout(thinkTimer);
+        setBotState("watching");
+        
+        setActiveColor(col, el);
+        currentCategory = COLOR_MAP[col] || 'unknown';
+        say("New color!", "🎨");
+    }
+
+    function pickCustomColor(input) {
+        if(thinkTimer) clearTimeout(thinkTimer);
+        setBotState("watching");
+        let col = input.value;
+        setActiveColor(col, document.getElementById('picker-btn'));
+        currentCategory = 'unknown'; 
+        say("Custom color!", "🌈");
+    }
+
+    function setActiveColor(col, el) {
+        currentColor = col;
+        ctx.strokeStyle = col; 
+        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+    }
+
+    function clearCanvas() {
+        if(thinkTimer) clearTimeout(thinkTimer);
+        hideUI();
+        ctx.fillStyle = "white";
+        ctx.fillRect(0,0,canvas.width, canvas.height);
+        strokeCount = 0;
+        setBotState("idle");
+        say("Clean slate!", "✨");
+    }
+
+    // --- BOT BRAIN ---
+    
+    function forceGuess(e) {
+        // Prevent default touch behavior if any
+        if(e && e.preventDefault) e.preventDefault(); 
+        
+        if(strokeCount < 1) {
+            say("Draw something first!", "🤨");
+            return;
+        }
+        
+        // KILL TIMER AND GUESS INSTANTLY
+        if(thinkTimer) clearTimeout(thinkTimer);
+        makeFinalGuess();
+    }
+
+    function setBotState(state) {
+        botState = state;
+        const bg = document.getElementById('bot-bg');
+        const bubble = document.getElementById('bot-text');
+        const face = document.getElementById('bot-face');
+        
+        bg.className = "bot-container"; 
+        face.className = "bot-avatar"; 
+        bubble.className = "speech-bubble";
+
+        if(state === "watching") {
+            face.innerText = "👀"; 
+            say("I'm watching...", "👀");
+        } else if (state === "thinking") {
+            bg.classList.add("thinking"); 
+            face.innerText = "🤔"; 
+            face.classList.add("bounce");
+            bubble.classList.add("thought"); 
+            say("Hmm... I think I know... (Tap me to guess!)", "🤔");
+        } else if (state === "guessing") {
+            face.innerText = "💡";
+        } else if (state === "celebrating") {
+            bg.classList.add("celebrating"); 
+            face.innerText = "🥳"; 
+            face.classList.add("bounce");
+        }
+    }
+
+    function makeFinalGuess() {
+        let cat = currentCategory;
+        if(strokeCount < 50) cat = 'tiny';
+        else if(strokeCount > 800) cat = 'messy';
+        if(!GUESSES[cat]) cat = 'unknown';
+
+        let options = GUESSES[cat];
+        finalGuessWord = options[Math.floor(Math.random() * options.length)];
+
+        setBotState("guessing");
+        say(`Is it... <b>${finalGuessWord}</b>?`, "😲");
+        document.getElementById('feedback').classList.add('visible');
+    }
+
+    // --- FEEDBACK & SHARING ---
+    function answerYes() { finishGame(); }
+    
+    function answerNo() {
+        hideUI();
+        document.getElementById('correction').style.display = 'flex';
+        document.getElementById('real-answer').value = '';
+        document.getElementById('real-answer').focus();
+        say("What?! Then what is it?", "🥺");
+    }
+
+    function submitCorrection() {
+        let text = document.getElementById('real-answer').value;
+        if(!text) return;
+        finalGuessWord = "a " + text.toUpperCase() + "!";
+        finishGame();
+    }
+
+    function finishGame() {
+        hideUI();
+        document.getElementById('correction').style.display = 'none';
+        setBotState("celebrating");
+        say(`Ohhh! It's <b>${finalGuessWord}</b>! <br>Awesome!`, "🤩");
+        setTimeout(showShareScreen, 1500);
+    }
+
+    function showShareScreen() {
+        document.getElementById('final-image').src = canvas.toDataURL('image/png');
+        document.getElementById('shareScreen').style.display = 'flex';
+    }
+
+    function closeShare() {
+        document.getElementById('shareScreen').style.display = 'none';
+        clearCanvas();
+    }
+
+    async function shareImage() {
+        if (navigator.share) {
+            try {
+                const dataUrl = canvas.toDataURL();
+                const blob = await (await fetch(dataUrl)).blob();
+                const file = new File([blob], "drawing.png", { type: blob.type });
+                await navigator.share({ title: 'My Drawing', text: `I drew ${finalGuessWord}`, files: [file] });
+            } catch (err) { downloadImage(); }
+        } else {
+            downloadImage();
+        }
+    }
+
+    function downloadImage() {
+         const link = document.createElement('a');
+         link.download = 'drawing.png';
+         link.href = canvas.toDataURL();
+         link.click();
+    }
+
+    function hideUI() {
+        document.getElementById('feedback').classList.remove('visible');
+        document.getElementById('correction').style.display = 'none';
+    }
+
+    function say(text, faceIcon) {
+        const bubble = document.getElementById('bot-text');
+        bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop');
+        bubble.innerHTML = text;
+        if(faceIcon) document.getElementById('bot-face').innerText = faceIcon;
+    }
+</script>
+</body>
+</html>
