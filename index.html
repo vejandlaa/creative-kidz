@@ -47,7 +47,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            height: 140px;
+            height: 160px; /* Increased height slightly for images */
             border: 1px solid #e2e8f0;
         }
 
@@ -57,10 +57,21 @@
             border-color: var(--primary-color);
         }
 
+        /* Fallback Text Icon */
         .tile-icon {
             font-size: 24px;
             margin-bottom: 12px;
             color: var(--primary-color);
+        }
+
+        /* NEW: Image Styling */
+        .tile-img {
+            width: 120px;
+            height: 90px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border: 2px solid #eee;
         }
 
         .tile-title {
@@ -95,19 +106,47 @@
     <h1>🚀 Creative Kidz</h1>
 
     <div class="dashboard-grid" id="gridContainer">
-        </div>
+    </div>
 
     <script>
         // ==========================================
-        // CONFIGURATION: Add your file names here
+        // CONFIGURATION: Add your file names AND images here
         // ==========================================
         const pages = [
-            { name: "Tic Tac Toe", file: "tic-tac-toe.html" },
-            { name: "Guess My Painting", file: "guess-drawing.html" },
-            { name: "Snakes & Ladders", file: "snake-and-ladder.html" },
-            { name: "Claw Machine Arcade", file: "squishmallow-arcade.html" },
-            { name: "Reports", file: "reports.html" },
-            { name: "404 Error", file: "404.html" }
+            { 
+                name: "Tic Tac Toe", 
+                file: "./games/tic-tac-toe.html",
+                // Image Source:
+                img: "./images/tic-tac-toe.png"
+            },
+            { 
+                name: "Guess My Painting", 
+                file: "./games/guess-drawing.html",
+                // Image Source:
+                img: "./images/guess-my-painting.png"
+            },
+            { 
+                name: "Snakes & Ladders", 
+                file: "./games/snake-and-ladder.html",
+                // Image Source:
+                img: "./images/snakes-and-ladders.png"
+            },
+            { 
+                name: "Claw Machine Arcade", 
+                file: "./games/squishmallow-arcade.html",
+                // Image Source:
+                img: "./images/claw-machine.png"
+            },
+            { 
+                name: "Reports", 
+                file: "reports.html",
+                img: "" // No image, will fallback to emoji
+            },
+            { 
+                name: "404 Error", 
+                file: "404.html",
+                img: "" // No image, will fallback to emoji
+            }
         ];
 
         // ==========================================
@@ -121,14 +160,19 @@
             tile.href = page.file;
             tile.target = "_blank"; // Opens in new tab
 
+            // Logic: Use Image if available, otherwise use default emoji icon
+            const iconDisplay = page.img 
+                ? `<img src="${page.img}" class="tile-img" alt="${page.name}">` 
+                : `<div class="tile-icon">📄</div>`;
+
             tile.innerHTML = `
                 <div>
-                    <div class="tile-icon">📄</div>
+                    ${iconDisplay}
                     <h3 class="tile-title">${page.name}</h3>
                 </div>
                 <div class="tile-path">
-                    <span class="status-dot"></span>${page.file}
-                </div>
+                    <span class="status-dot"></span> 
+                    </div>
             `;
 
             container.appendChild(tile);
