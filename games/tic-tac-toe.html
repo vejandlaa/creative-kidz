@@ -301,7 +301,12 @@
         state.hostIdShort = Math.floor(1000 + Math.random() * 9000).toString();
 
         if(peer) peer.destroy();
-        peer = new Peer(PEER_PREFIX + state.hostIdShort);
+        peer = new Peer(PEER_PREFIX + state.hostIdShort, {
+            host: 'peerjs.com',
+            port: 443,
+            secure: true
+        });
+
 
         peer.on('open', (id) => {
             document.getElementById('host-id-display').innerText = state.hostIdShort;
@@ -337,13 +342,24 @@
 
     function joinGame() {
         const shortCode = document.getElementById('join-id-input').value;
-        if(!shortCode || shortCode.length !== 4) return alert("Please enter the 4-digit code.");
+        if (!shortCode || shortCode.length !== 4) {
+            alert("Please enter the 4-digit code.");
+            return;
+        }
 
         const fullId = PEER_PREFIX + shortCode;
-        document.getElementById('lobby-status').innerText = "Looking for game...";
 
-        if(peer) peer.destroy();
-        peer = new Peer();
+        // UI feedback
+        document.getElementById('lobby-menu').classList.add('hidden');
+        document.getElementById('lobby-status').innerText = "Connecting to host…";
+
+        if (peer) peer.destroy();
+
+        peer = new Peer(undefined, {
+            host: 'peerjs.com',
+            port: 443,
+            secure: true
+        });
 
         peer.on('open', () => {
             const conn = peer.connect(fullId, { reliable: true });
@@ -351,35 +367,50 @@
             state.isHost = false;
 
             conn.on('open', () => {
-                document.getElementById('lobby-status').innerText = "Connected! Sending Handshake...";
-                // JOINER SPEAKS FIRST
-                conn.send({ type: 'JOIN_REQUEST', avatar: state.p1.html });
+                document.getElementById('lobby-status').innerText = "Connected! Syncing…";
+
+                // JOINER ALWAYS SPEAKS FIRST
+                conn.send({
+                    type: 'JOIN_REQUEST',
+                    avatar: state.p1.html
+                });
             });
 
             conn.on('data', (data) => {
-                if(data.type === 'ACCEPTED') {
-                    // Host accepted us
-                    state.p2.html = state.p1.html; // I am P2 locally
-                    state.p1.html = data.avatar;   // Host is P1
+                if (data.type === 'ACCEPTED') {
+                    // Correct role assignment
+                    state.p2.html = state.p1.html;
+                    state.p1.html = data.avatar;
+
                     finishOnlineHandshake();
                 }
-                if(data.type === 'move') handleRemoteMove(data.index);
-                if(data.type === 'restart') restartGameLocal();
+
+                if (data.type === 'move') handleRemoteMove(data.index);
+                if (data.type === 'restart') restartGameLocal();
             });
 
-            // If connection fails silently (common in PeerJS), timeout
-            setTimeout(() => {
-                if(!state.active && document.getElementById('lobby-status').innerText.includes("Connected")) {
-                    // Handshake stalled
-                }
-            }, 5000);
+            conn.on('error', () => {
+                alert("Connection lost.");
+                location.reload();
+            });
         });
 
         peer.on('error', (err) => {
-            document.getElementById('lobby-status').innerText = "";
-            if(err.type === 'peer-unavailable') alert("Game ID not found. Is the Host online?");
-            else alert("Error: " + err.type);
+            if (err.type === 'peer-unavailable') {
+                alert("Game not found. Make sure the host is online.");
+            } else {
+                alert("Network error: " + err.type);
+            }
+            location.reload();
         });
+
+        // HARD timeout safety
+        setTimeout(() => {
+            if (!state.active) {
+                alert("Connection timed out.");
+                location.reload();
+            }
+        }, 10000);
     }
 
     function copyHostId() {
