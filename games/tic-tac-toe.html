@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ultimate Monster Tic-Tac-Toe</title>
+    <title>Monster Tic-Tac-Toe: Split Prizes</title>
     <style>
         :root {
             --bg-color: #e3f2fd;
             --grid-color: #0288d1;
-            --cell-size: 100px; /* Slightly smaller to fit side panel */
+            --cell-size: 100px;
             --focus-outline: 8px solid #ffeb3b;
         }
 
@@ -28,11 +28,10 @@
 
         h1 { color: #01579b; margin: 0 0 10px 0; text-shadow: 2px 2px white; text-align: center; font-size: clamp(1.5rem, 4vw, 2.5rem); }
 
-        /* Main Container */
         .container {
             background: white; padding: 20px; border-radius: 25px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3); border: 6px solid var(--grid-color);
-            max-width: 900px; width: 98%; text-align: center; position: relative;
+            max-width: 950px; width: 98%; text-align: center; position: relative;
         }
 
         .hidden { display: none !important; }
@@ -49,45 +48,60 @@
         .btn-green { background-color: #66bb6a; }
         .btn-purple { background-color: #ab47bc; }
 
-        /* --- GAME LAYOUT (SIDE BY SIDE) --- */
+        /* --- GAME LAYOUT --- */
         .game-layout {
-            display: flex; flex-direction: row; align-items: flex-start; justify-content: center; gap: 20px;
+            display: flex; flex-direction: row; align-items: flex-start; justify-content: center; gap: 15px;
         }
-        /* Mobile Layout */
-        @media (max-width: 700px) {
+        @media (max-width: 750px) {
             .game-layout { flex-direction: column; align-items: center; }
             :root { --cell-size: 80px; }
         }
 
-        /* The Board Section */
         .game-main { display: flex; flex-direction: column; align-items: center; }
 
-        /* The Side Collection Panel */
+        /* --- SIDE COLLECTION PANEL (SPLIT) --- */
         .side-collection {
             background: #fff9c4; border: 4px dashed #fbc02d; border-radius: 15px;
-            padding: 10px; width: 160px; min-height: 350px;
-            display: flex; flex-direction: column; align-items: center;
+            padding: 0; width: 170px; min-height: 400px;
+            display: flex; flex-direction: column; overflow: hidden;
         }
-        @media (max-width: 700px) {
+        @media (max-width: 750px) {
             .side-collection {
-                width: 90%; min-height: auto; flex-direction: row;
-                overflow-x: auto; padding: 5px; border-width: 2px;
+                width: 95%; min-height: auto; flex-direction: row;
+                padding: 5px; border-width: 2px;
             }
         }
 
-        .collection-title { font-weight: bold; color: #f57f17; margin-bottom: 10px; }
+        .shelf-section {
+            flex: 1; padding: 10px; display: flex; flex-direction: column; align-items: center;
+            overflow-y: auto;
+        }
+        .shelf-divider {
+            height: 4px; width: 100%; background: #fbc02d; border-radius: 2px;
+        }
+        @media (max-width: 750px) {
+            .shelf-divider { width: 4px; height: 100%; }
+        }
+
+        .collection-title { font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+
+        .shelf-grid-inner {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; width: 100%;
+        }
 
         .mini-toy {
-            background: white; border: 2px solid #ddd; border-radius: 10px;
-            margin: 5px; padding: 5px; width: 50px; height: 50px;
+            background: white; border: 2px solid #ddd; border-radius: 8px;
+            width: 40px; height: 40px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem; position: relative;
+            font-size: 1.2rem; position: relative;
         }
         .mini-toy-count {
-            position: absolute; bottom: -5px; right: -5px; background: red;
-            color: white; font-size: 0.7rem; padding: 2px 5px; border-radius: 10px;
-            font-weight: bold;
+            position: absolute; bottom: -5px; right: -5px;
+            color: white; font-size: 0.6rem; padding: 1px 4px; border-radius: 8px;
+            font-weight: bold; box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
+        .bg-p1 { background: #ef5350; }
+        .bg-p2 { background: #03a9f4; }
 
         /* Avatar Grid */
         .avatar-grid { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 15px 0; }
@@ -142,26 +156,22 @@
         }
         .cell { background-color: #fff; width: var(--cell-size); height: var(--cell-size); display: flex; align-items: center; justify-content: center; position: relative; border-radius: 15px; overflow: visible; }
 
-        /* --- MONSTER CSS (ALL 4 RESTORED) --- */
+        /* --- MONSTER CSS --- */
         .avatar-wrapper { width: 80%; height: 80%; position: relative; display: flex; justify-content: center; align-items: center; z-index: 5; }
         .custom-drawing { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 2px rgba(0,0,0,0.3)); }
 
-        /* 1. Slime */
         .mon-slime { width: 70%; height: 60%; background: #a3cf15; border-radius: 50% 50% 40% 40%; border: 3px solid #6d8c00; position: relative; }
         .mon-slime::before { content: ''; position: absolute; top: 20%; left: 25%; width: 30%; height: 40%; background: white; border: 2px solid black; border-radius: 50%; }
         .mon-slime::after { content: ''; position: absolute; top: 30%; left: 40%; width: 10%; height: 10%; background: black; border-radius: 50%; }
 
-        /* 2. Derpy */
         .mon-derpy { width: 60%; height: 60%; background: #29b6f6; border-radius: 10px; border: 3px solid #0277bd; position: relative; }
         .mon-derpy::before { content: ''; position: absolute; top: 25%; left: 20%; width: 15%; height: 15%; background: white; border: 2px solid black; border-radius: 50%; box-shadow: 25px 0 0 white, 25px 0 0 2px black; }
         .mon-derpy::after { content: ''; position: absolute; bottom: 20%; left: 45%; width: 15%; height: 25%; background: #f48fb1; border: 2px solid black; border-radius: 0 0 10px 10px; }
 
-        /* 3. Silly */
         .mon-silly { width: 60%; height: 70%; background: #ffa726; border-radius: 50%; border: 3px solid #ef6c00; position: relative; }
         .mon-silly .eye { width: 12px; height: 12px; background: white; border: 2px solid black; border-radius: 50%; position: absolute; }
         .mon-silly::after { content: ''; width: 30px; height: 10px; border-bottom: 3px solid black; border-radius: 50%; position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); }
 
-        /* 4. Grumpy */
         .mon-grumpy { width: 70%; height: 60%; background: #ab47bc; border: 3px solid #7b1fa2; position: relative; clip-path: polygon(0% 10%, 10% 0%, 20% 10%, 30% 0%, 40% 10%, 50% 0%, 60% 10%, 70% 0%, 80% 10%, 90% 0%, 100% 10%, 100% 100%, 0% 100%); }
         .mon-grumpy::before { content:''; position: absolute; top: 25%; left: 20%; width: 15px; height: 5px; background: white; border: 2px solid black; box-shadow: 30px 0 0 white, 30px 0 0 2px black; transform: rotate(15deg); }
         .mon-grumpy::after { content:''; position: absolute; top: 25%; right: 20%; width: 15px; height: 5px; transform: rotate(-15deg); }
@@ -224,7 +234,7 @@
 
     <div id="view-turn" class="view-section hidden">
         <h2>Who goes first?</h2>
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
             <button class="btn btn-green nav-item" onclick="chooseTurn('p1')" tabindex="0">Me / Player 1</button>
             <button class="btn btn-red nav-item" onclick="chooseTurn('p2')" tabindex="0" id="btn-p2-start">Computer</button>
             <button class="btn btn-purple nav-item" onclick="chooseTurn('random')" tabindex="0">Random 🎲</button>
@@ -256,7 +266,6 @@
     </div>
 
     <div id="view-game" class="view-section hidden">
-
         <div class="game-layout">
             <div class="game-main">
                 <div class="scoreboard">
@@ -273,24 +282,33 @@
             </div>
 
             <div class="side-collection">
-                <div class="collection-title">My Toys 🎁</div>
-                <div id="mini-shelf-grid" style="display:flex; flex-wrap:wrap; justify-content:center;">
-                    <div style="font-size:0.8rem; color:#888;">Win to collect!</div>
+
+                <div class="shelf-section" style="background: rgba(239, 83, 80, 0.1);">
+                    <div class="collection-title" style="color: #ef5350;">Player 1 Toys</div>
+                    <div id="shelf-p1" class="shelf-grid-inner"></div>
                 </div>
+
+                <div class="shelf-divider"></div>
+
+                <div class="shelf-section" style="background: rgba(3, 169, 244, 0.1);">
+                    <div class="collection-title" style="color: #03a9f4;" id="shelf-title-p2">Player 2 Toys</div>
+                    <div id="shelf-p2" class="shelf-grid-inner"></div>
+                </div>
+
             </div>
         </div>
-
     </div>
 
 </div>
 
 <script>
-    /* --- STATE --- */
     const state = {
         mode: '', turn: 'p1', setupPlayer: 1,
         p1: { html: '' }, p2: { html: '' },
         board: Array(9).fill(''), active: false, scores: { p1: 0, p2: 0 },
-        collection: { 'bear':0, 'dino':0, 'uni':0, 'robot':0, 'duck':0, 'car':0 }
+        // Collection for each player (counts for each toy ID)
+        p1Collection: { 'bear':0, 'dino':0, 'uni':0, 'robot':0, 'duck':0, 'car':0 },
+        p2Collection: { 'bear':0, 'dino':0, 'uni':0, 'robot':0, 'duck':0, 'car':0 }
     };
 
     const premades = {
@@ -339,6 +357,7 @@
         document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
         setTimeout(updateNavList, 100);
+        if(id === 'view-game') renderAllShelves();
     }
     function setMode(m) {
         state.mode = m; state.setupPlayer = 1; switchView('view-avatar');
@@ -354,14 +373,15 @@
                 const keys = Object.keys(premades);
                 state.p2.html = `<div class="avatar-wrapper">${premades[keys[Math.floor(Math.random() * keys.length)]]}</div>`;
                 document.getElementById('p2-name').innerText = "Bot";
-                switchView('view-turn'); // Go to turn select
+                document.getElementById('shelf-title-p2').innerText = "Bot Toys";
+                switchView('view-turn');
             } else {
                 state.setupPlayer = 2; switchView('view-avatar');
                 document.getElementById('avatar-title').innerText = "Player 2: Pick!";
             }
         } else {
             state.p2.html = html;
-            switchView('view-turn'); // Go to turn select
+            switchView('view-turn');
         }
     }
     function chooseTurn(choice) {
@@ -396,7 +416,6 @@
     function startStroke(x, y) { mouseDrawing = true; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.strokeStyle = currentColor; }
     function drawTo(x, y) { ctx.lineTo(x, y); ctx.stroke(); }
     function endStroke() { mouseDrawing = false; ctx.beginPath(); }
-
     function handleTvDrawing(e) {
         const speed = 15; let moved = false;
         if(e.key === 'ArrowUp') { tvY -= speed; moved = true; }
@@ -430,7 +449,6 @@
     function restartGame() {
         state.board.fill(''); state.active = true;
         renderBoard(); updateStatusText();
-        // Same player starts or alternate? Let's just reset current turn for now or keep random
         if(state.mode === 'pvc' && state.turn === 'p2') setTimeout(computerMove, 800);
     }
     function updateStatusText() {
@@ -450,7 +468,6 @@
         });
         updateNavList();
     }
-
     function move(i) {
         if(!state.active || state.board[i] !== '') return;
         state.board[i] = state.turn;
@@ -510,15 +527,15 @@
             state.scores[winner]++;
             document.getElementById(`score-${winner}`).innerText = state.scores[winner];
 
-            // Award Prize only if P1 wins or PvP
-            let prize = null;
-            if(winner === 'p1' || state.mode === 'pvp') {
-                prize = toyList[Math.floor(Math.random() * toyList.length)];
-                state.collection[prize.id]++;
-                renderSideShelf();
-            }
+            // Award Prize Logic
+            const prize = toyList[Math.floor(Math.random() * toyList.length)];
 
-            status.innerText = prize ? `${winnerName} won a ${prize.name}!` : `${winnerName} Wins!`;
+            if(winner === 'p1') state.p1Collection[prize.id]++;
+            else state.p2Collection[prize.id]++;
+
+            renderAllShelves();
+
+            status.innerText = `${winnerName} won a ${prize.name}!`;
 
             cells.forEach((c, i) => {
                 if(state.board[i] === winner) applyWinnerStyle(c, prize);
@@ -527,21 +544,26 @@
         }
     }
 
-    function renderSideShelf() {
-        const container = document.getElementById('mini-shelf-grid');
+    function renderAllShelves() {
+        renderOneShelf('shelf-p1', state.p1Collection, 'bg-p1');
+        renderOneShelf('shelf-p2', state.p2Collection, 'bg-p2');
+    }
+
+    function renderOneShelf(containerId, collection, bgClass) {
+        const container = document.getElementById(containerId);
         container.innerHTML = '';
         let hasItems = false;
         toyList.forEach(toy => {
-            const count = state.collection[toy.id];
+            const count = collection[toy.id];
             if(count > 0) {
                 hasItems = true;
                 const div = document.createElement('div');
                 div.className = 'mini-toy';
-                div.innerHTML = `${toy.icon} <div class="mini-toy-count">${count}</div>`;
+                div.innerHTML = `${toy.icon} <div class="mini-toy-count ${bgClass}">${count}</div>`;
                 container.appendChild(div);
             }
         });
-        if(!hasItems) container.innerHTML = '<div style="font-size:0.8rem; color:#888;">Win to collect!</div>';
+        if(!hasItems) container.innerHTML = '<div style="font-size:0.8rem; color:#888;">Empty</div>';
     }
 
     function applyWinnerStyle(cell, prize) {
