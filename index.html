@@ -3,178 +3,210 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Creative Kidz Dashboard</title>
+    <title>Creative Kidz | Play Games</title>
     <style>
         :root {
-            --bg-color: #f4f6f8;
-            --card-bg: #ffffff;
+            --bg-color: #f0f2f5;
             --primary-color: #2563eb;
             --text-color: #1e293b;
-            --subtext-color: #64748b;
+            --main-tile-size: 160px; /* Small, consistent home page tiles */
+            --side-tile-size: 85px;  /* Tiny tiles for the sidebar */
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, system-ui, sans-serif;
             background-color: var(--bg-color);
-            color: var(--text-color);
             margin: 0;
-            padding: 40px;
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 40px;
-            color: var(--text-color);
-        }
-
-        /* Grid Layout */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 24px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        /* Tile Styling */
-        .tile {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            text-decoration: none;
             display: flex;
             flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- HEADER --- */
+        header {
+            padding: 10px 20px;
+            background: white;
+            display: flex;
             justify-content: space-between;
-            height: 160px; /* Increased height slightly for images */
-            border: 1px solid #e2e8f0;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            z-index: 100;
+        }
+
+        #main-content {
+            flex: 1;
+            display: flex;
+            padding: 20px;
+            overflow-y: auto;
+            justify-content: center;
+        }
+
+        /* --- DASHBOARD VIEW (HOME) --- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(var(--main-tile-size), 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        /* --- PLAY MODE VIEW --- */
+        #game-view {
+            display: none;
+            width: 100%;
+            height: 100%;
+            gap: 20px;
+        }
+
+        .iframe-container {
+            flex: 4;
+            background: #000;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* --- SIDEBAR TILES --- */
+        .side-recommendations {
+            flex: 0 0 100px; /* Fixed width sidebar */
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            align-items: center;
+        }
+
+        /* --- UNIVERSAL TILE STYLING --- */
+        .tile {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.2s;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            aspect-ratio: 1 / 1; /* Forces square shape to prevent stretching */
         }
 
         .tile:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            border-color: var(--primary-color);
+            transform: scale(1.05);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
         }
 
-        /* Fallback Text Icon */
-        .tile-icon {
-            font-size: 24px;
-            margin-bottom: 12px;
-            color: var(--primary-color);
+        /* Sidebar tile sizing */
+        .side-recommendations .tile {
+            width: var(--side-tile-size);
+            height: var(--side-tile-size);
         }
 
-        /* NEW: Image Styling */
+        .media-container {
+            position: relative;
+            flex: 1;
+            overflow: hidden;
+            background: #eee;
+        }
+
         .tile-img {
-            width: 120px;
-            height: 90px;
-            object-fit: cover;
-            border-radius: 10px;
-            margin-bottom: 12px;
-            border: 2px solid #eee;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Prevents vertical stretching seen in your image */
         }
+
+        .hover-video {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; opacity: 0; transition: opacity 0.3s;
+        }
+        .tile:hover .hover-video { opacity: 1; }
 
         .tile-title {
-            font-size: 1.1rem;
+            padding: 8px 4px;
+            font-size: 0.8rem;
             font-weight: 600;
+            text-align: center;
+            background: white;
             color: var(--text-color);
-            margin: 0 0 8px 0;
         }
 
-        .tile-path {
-            font-size: 0.85rem;
-            color: var(--subtext-color);
-            word-break: break-all;
-            background: #f1f5f9;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-family: monospace;
-        }
-
-        .status-dot {
-            height: 8px;
-            width: 8px;
-            background-color: #22c55e;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
-        }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <h1>🚀 Creative Kidz</h1>
+<header>
+    <div style="font-size: 1.4rem; font-weight: bold; cursor: pointer;" onclick="showDashboard()">🚀 Creative Kidz</div>
+    <button id="home-btn" class="hidden" onclick="showDashboard()" style="cursor:pointer; padding: 6px 12px; border-radius: 8px; border: 1px solid #ccc; background: white;">Home</button>
+</header>
 
-    <div class="dashboard-grid" id="gridContainer">
+<div id="main-content">
+    <div id="grid-view" class="dashboard-grid"></div>
+
+    <div id="game-view">
+        <div class="iframe-container">
+            <iframe id="game-loader" src=""></iframe>
+        </div>
+        <div class="side-recommendations" id="side-grid"></div>
     </div>
+</div>
 
-    <script>
-        // ==========================================
-        // CONFIGURATION: Add your file names AND images here
-        // ==========================================
-        const pages = [
-            { 
-                name: "Tic Tac Toe", 
-                file: "./games/tic-tac-toe.html",
-                // Image Source:
-                img: "./images/tic-tac-toe.png"
-            },
-            { 
-                name: "Guess My Painting", 
-                file: "./games/guess-drawing.html",
-                // Image Source:
-                img: "./images/guess-my-painting.png"
-            },
-            { 
-                name: "Snakes & Ladders", 
-                file: "./games/snake-and-ladder.html",
-                // Image Source:
-                img: "./images/snakes-and-ladders.png"
-            },
-            { 
-                name: "Claw Machine Arcade", 
-                file: "./games/squishmallow-arcade.html",
-                // Image Source:
-                img: "./images/claw-machine.png"
-            },
-            { 
-                name: "Reports", 
-                file: "reports.html",
-                img: "" // No image, will fallback to emoji
-            },
-            { 
-                name: "404 Error", 
-                file: "404.html",
-                img: "" // No image, will fallback to emoji
-            }
-        ];
+<script>
+    const pages = [
+        { id: 1, name: "Tic Tac Toe", file: "./games/tic-tac-toe.html", img: "./images/tic-tac-toe.png" },
+        { id: 2, name: "Squishmallow Arcade", file: "./games/squishmallow-arcade.html", img: "./images/claw-machine.png" },
+        { id: 3, name: "Guess My Painting", file: "./games/guess-drawing.html", img: "./images/guess-my-painting.png" },
+        { id: 4, name: "Snakes & Ladders", file: "./games/snake-and-ladder.html", img: "./images/snakes-and-ladders.png" }
+    ];
 
-        // ==========================================
-        // LOGIC: Generates the tiles
-        // ==========================================
-        const container = document.getElementById('gridContainer');
-
-        pages.forEach(page => {
-            const tile = document.createElement('a');
-            tile.className = 'tile';
-            tile.href = page.file;
-            tile.target = "_blank"; // Opens in new tab
-
-            // Logic: Use Image if available, otherwise use default emoji icon
-            const iconDisplay = page.img 
-                ? `<img src="${page.img}" class="tile-img" alt="${page.name}">` 
-                : `<div class="tile-icon">📄</div>`;
-
-            tile.innerHTML = `
-                <div>
-                    ${iconDisplay}
-                    <h3 class="tile-title">${page.name}</h3>
+    function createTile(page) {
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        tile.innerHTML = `
+                <div class="media-container">
+                    <img src="${page.img}" class="tile-img" alt="${page.name}">
+                    ${page.video ? `<video class="hover-video" loop muted playsinline><source src="${page.video}" type="video/mp4"></video>` : ''}
                 </div>
+                <div class="tile-title">${page.name}</div>
             `;
 
-            container.appendChild(tile);
-        });
-    </script>
+        tile.onclick = () => loadGame(page);
+        tile.onmouseenter = () => { const v = tile.querySelector('video'); if(v) v.play(); };
+        tile.onmouseleave = () => { const v = tile.querySelector('video'); if(v) { v.pause(); v.currentTime = 0; } };
 
+        return tile;
+    }
+
+    function loadGame(page) {
+        document.getElementById('grid-view').classList.add('hidden');
+        document.getElementById('home-btn').classList.remove('hidden');
+        document.getElementById('game-view').style.display = 'flex';
+
+        // Fix: Directly set the file name from your project root
+        document.getElementById('game-loader').src = page.file;
+
+        const sideGrid = document.getElementById('side-grid');
+        sideGrid.innerHTML = '';
+        pages.filter(p => p.id !== page.id).forEach(p => {
+            sideGrid.appendChild(createTile(p));
+        });
+    }
+
+    function showDashboard() {
+        document.getElementById('grid-view').classList.remove('hidden');
+        document.getElementById('home-btn').classList.add('hidden');
+        document.getElementById('game-view').style.display = 'none';
+        document.getElementById('game-loader').src = '';
+    }
+
+    // Initialize grid
+    const gridContainer = document.getElementById('grid-view');
+    pages.forEach(p => gridContainer.appendChild(createTile(p)));
+</script>
 </body>
 </html>

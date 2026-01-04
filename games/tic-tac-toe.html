@@ -3,593 +3,559 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MTic-Tac-Toe</title>
+    <title>Tic Tac Toe</title>
     <style>
         :root {
-            --bg-color: #e3f2fd;
-            --grid-color: #0288d1;
+            --bg-color: #f4f7f6;
+            --panel-bg: #ffffff;
+            --accent: #00bcd4;
             --cell-size: 100px;
-            --focus-outline: 8px solid #ffeb3b;
+            --focus-outline: 4px solid #ffca28;
         }
 
         body {
-            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: 100vh; margin: 0; background-color: var(--bg-color);
-            padding: 10px; box-sizing: border-box; user-select: none; overflow: hidden;
+            font-family: 'Segoe UI', 'Comic Sans MS', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0; padding: 10px;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; user-select: none; -webkit-user-select: none;
         }
 
-        /* TV Focus */
-        .tv-focused {
-            outline: var(--focus-outline) !important;
-            transform: scale(1.05); z-index: 100;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        h1 { color: #37474f; margin: 0 0 15px 0; text-align: center; }
+
+        /* --- LAYOUT --- */
+        .dashboard {
+            display: flex; flex-direction: row; gap: 20px;
+            width: 100%; max-width: 1200px; justify-content: center; align-items: flex-start;
         }
 
-        h1 { color: #01579b; margin: 0 0 10px 0; text-shadow: 2px 2px white; text-align: center; font-size: clamp(1.5rem, 4vw, 2.5rem); }
-
-        .container {
-            background: white; padding: 20px; border-radius: 25px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3); border: 6px solid var(--grid-color);
-            max-width: 950px; width: 98%; text-align: center; position: relative;
+        @media (max-width: 900px) {
+            .dashboard { flex-direction: column; align-items: center; }
+            .panel { width: 95% !important; }
+            .side-collection { width: 95% !important; height: auto !important; flex-direction: row !important; min-height: 100px; }
         }
 
-        .hidden { display: none !important; }
-
-        /* Buttons */
-        .btn {
-            padding: 12px 24px; font-size: 1.1rem; border: none; border-radius: 50px;
-            cursor: pointer; font-family: inherit; font-weight: bold; color: white;
-            margin: 8px; transition: transform 0.1s; outline: none; width: 80%; max-width: 280px;
-        }
-        .btn:active { transform: scale(0.95); opacity: 0.8; }
-        .btn-blue { background-color: #03a9f4; }
-        .btn-red { background-color: #ef5350; }
-        .btn-green { background-color: #66bb6a; }
-        .btn-purple { background-color: #ab47bc; }
-
-        /* --- GAME LAYOUT --- */
-        .game-layout {
-            display: flex; flex-direction: row; align-items: flex-start; justify-content: center; gap: 15px;
-        }
-        @media (max-width: 750px) {
-            .game-layout { flex-direction: column; align-items: center; }
-            :root { --cell-size: 80px; }
+        /* --- PANELS --- */
+        .panel {
+            background: var(--panel-bg); border-radius: 20px; padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; align-items: center;
         }
 
-        .game-main { display: flex; flex-direction: column; align-items: center; }
+        /* Setup Panel */
+        .panel-setup { width: 260px; flex-shrink: 0; }
+        .control-group { width: 100%; margin-bottom: 15px; text-align: center; }
+        .control-label { font-weight: bold; color: #78909c; font-size: 0.85rem; margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: 1px;}
 
-        /* --- SIDE COLLECTION PANEL (SPLIT) --- */
-        .side-collection {
-            background: #fff9c4; border: 4px dashed #fbc02d; border-radius: 15px;
-            padding: 0; width: 170px; min-height: 400px;
-            display: flex; flex-direction: column; overflow: hidden;
+        .btn-group { display: flex; gap: 5px; width: 100%; }
+        .btn-toggle {
+            padding: 10px; border: 2px solid #eee; background: white;
+            border-radius: 8px; cursor: pointer; font-weight: bold; color: #555;
+            flex: 1; transition: all 0.2s; font-size: 0.9rem;
         }
-        @media (max-width: 750px) {
-            .side-collection {
-                width: 95%; min-height: auto; flex-direction: row;
-                padding: 5px; border-width: 2px;
-            }
-        }
+        .btn-toggle.active { background: var(--accent); color: white; border-color: var(--accent); }
 
-        .shelf-section {
-            flex: 1; padding: 10px; display: flex; flex-direction: column; align-items: center;
-            overflow-y: auto;
+        .avatar-grid-mini { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; width: 100%; }
+        .mini-avatar {
+            aspect-ratio: 1; border: 2px solid #eee; border-radius: 8px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden;
+            transition: transform 0.1s;
         }
-        .shelf-divider {
-            height: 4px; width: 100%; background: #fbc02d; border-radius: 2px;
-        }
-        @media (max-width: 750px) {
-            .shelf-divider { width: 4px; height: 100%; }
-        }
+        .mini-avatar.active { border-color: var(--accent); background: #e0f7fa; transform: scale(1.05); }
+        .mini-avatar.locked { cursor: not-allowed; opacity: 0.5; filter: grayscale(0.5); pointer-events: none; }
+        .mini-avatar.locked.active { opacity: 1; filter: none; border-color: #ff9800; background: #fff3e0; }
 
-        .collection-title { font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        /* Game Panel */
+        .panel-game { flex: 1; min-width: 300px; display: flex; flex-direction: column; align-items: center; }
 
-        .shelf-grid-inner {
-            display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; width: 100%;
+        .scoreboard { display: flex; gap: 15px; margin-bottom: 15px; width: 100%; justify-content: center; }
+        .score-card { text-align: center; padding: 5px 15px; background: #fafafa; border-radius: 10px; min-width: 60px; border: 1px solid #eee;}
+        .score-num { font-size: 1.4rem; font-weight: 900; }
+        .p1-color { color: #e57373; }
+        .p2-color { color: #64b5f6; }
+
+        /* --- THE GRID FIX --- */
+        .board {
+            display: grid;
+            /* minmax(0, 1fr) prevents the grid from expanding when a large image is added */
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-rows: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            width: 100%; max-width: 380px; aspect-ratio: 1;
+            background: #cfd8dc; border: 8px solid #cfd8dc; border-radius: 15px;
         }
+        .cell {
+            background: white; border-radius: 8px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center; position: relative;
+            overflow: visible; touch-action: manipulation;
+        }
+        .cell:active { transform: scale(0.95); }
 
+        /* Prize Panel */
+        .panel-prizes { width: 180px; flex-shrink: 0; min-height: 400px; }
+        .shelf {
+            width: 100%; flex: 1; background: #fff8e1; border-radius: 10px;
+            margin-bottom: 10px; padding: 8px;
+            display: flex; flex-wrap: wrap; align-content: flex-start; gap: 8px; overflow-y: auto;
+        }
         .mini-toy {
-            background: white; border: 2px solid #ddd; border-radius: 8px;
-            width: 40px; height: 40px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem; position: relative;
+            width: 40px; height: 40px; background: white; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-size: 1.2rem;
+            position: relative; border: 2px solid #ffe082; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         .mini-toy-count {
-            position: absolute; bottom: -5px; right: -5px;
-            color: white; font-size: 0.6rem; padding: 1px 4px; border-radius: 8px;
-            font-weight: bold; box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            position: absolute; bottom: -5px; right: -5px; font-size: 0.7rem;
+            background: #ff5252; color: white; padding: 1px 5px; border-radius: 10px; font-weight: bold;
         }
-        .bg-p1 { background: #ef5350; }
-        .bg-p2 { background: #03a9f4; }
 
-        /* Avatar Grid */
-        .avatar-grid { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 15px 0; }
-        .avatar-option {
-            width: 80px; height: 80px; border: 4px solid #eee; border-radius: 20px;
+        /* --- DRAWING OVERLAY --- */
+        #draw-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 9999;
             display: flex; justify-content: center; align-items: center;
-            background: #f9f9f9; transition: transform 0.2s; cursor: pointer;
         }
-        .draw-new-btn { background: #fff; border: 4px dashed #333; font-size: 2.5rem; color: #333; }
+        #draw-overlay.hidden { display: none !important; }
 
-        /* Drawing Studio */
-        #drawing-area { display: flex; flex-direction: column; align-items: center; }
-        .giggle-bot-area {
-            position: relative; margin-bottom: 5px; width: 100%; display: flex;
-            justify-content: center; align-items: flex-end; height: 60px;
+        .draw-modal {
+            background: white; padding: 20px; border-radius: 20px;
+            display: flex; flex-direction: column; align-items: center;
+            width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .bot-avatar { font-size: 3rem; margin-right: 10px; }
-        .speech-bubble {
-            background: #333; color: white; padding: 8px 15px;
-            border-radius: 20px 20px 20px 0; font-size: 0.9rem;
-            max-width: 300px; display: flex; align-items: center;
+        canvas { border: 4px solid #333; border-radius: 10px; cursor: crosshair; touch-action: none; background: white; margin: 10px 0; }
+        .palette { display: flex; gap: 10px; margin-bottom: 15px; }
+        .swatch { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .swatch.active { transform: scale(1.2); border-color: #333; }
+
+        /* --- AVATAR GRAPHICS (FIXED FOR GRID) --- */
+        .avatar-wrapper {
+            width: 100%; height: 100%; position: relative;
+            display: flex; justify-content: center; align-items: center;
         }
-
-        .canvas-wrapper {
-            position: relative; border-radius: 15px; overflow: hidden;
-            border: 4px solid #333; background: white; cursor: crosshair;
-        }
-        #tv-cursor {
-            width: 15px; height: 15px; background: rgba(255, 0, 0, 0.8);
-            border: 2px solid white; border-radius: 50%;
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%); pointer-events: none; z-index: 10;
-            display: none; box-shadow: 0 0 5px black;
-        }
-        .tools-panel { background: #eee; width: 100%; padding: 5px; border-radius: 15px; margin-top: 10px; }
-        .palette { display: flex; gap: 8px; justify-content: center; margin-bottom: 5px; flex-wrap: wrap;}
-        .color-swatch {
-            width: 30px; height: 30px; border-radius: 50%;
-            border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-        .color-swatch.active { transform: scale(1.2); border-color: #333; }
-
-        /* Game Board */
-        .scoreboard { display: flex; justify-content: space-around; width: 100%; margin-bottom: 10px; background: #fff; padding: 5px; border-radius: 15px; border: 2px solid #ccc; }
-        .score-val { font-size: 1.5rem; font-weight: 800; color: #ef5350; }
-        .board {
-            display: grid; grid-template-columns: repeat(3, var(--cell-size));
-            grid-template-rows: repeat(3, var(--cell-size));
-            gap: 8px; background-color: var(--grid-color);
-            border: 8px solid var(--grid-color); border-radius: 20px;
-            margin: 0 auto;
-        }
-        .cell { background-color: #fff; width: var(--cell-size); height: var(--cell-size); display: flex; align-items: center; justify-content: center; position: relative; border-radius: 15px; overflow: visible; }
-
-        /* --- MONSTER CSS --- */
-        .avatar-wrapper { width: 80%; height: 80%; position: relative; display: flex; justify-content: center; align-items: center; z-index: 5; }
-        .custom-drawing { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 2px rgba(0,0,0,0.3)); }
-
-        .mon-slime { width: 70%; height: 60%; background: #a3cf15; border-radius: 50% 50% 40% 40%; border: 3px solid #6d8c00; position: relative; }
-        .mon-slime::before { content: ''; position: absolute; top: 20%; left: 25%; width: 30%; height: 40%; background: white; border: 2px solid black; border-radius: 50%; }
-        .mon-slime::after { content: ''; position: absolute; top: 30%; left: 40%; width: 10%; height: 10%; background: black; border-radius: 50%; }
-
-        .mon-derpy { width: 60%; height: 60%; background: #29b6f6; border-radius: 10px; border: 3px solid #0277bd; position: relative; }
-        .mon-derpy::before { content: ''; position: absolute; top: 25%; left: 20%; width: 15%; height: 15%; background: white; border: 2px solid black; border-radius: 50%; box-shadow: 25px 0 0 white, 25px 0 0 2px black; }
-        .mon-derpy::after { content: ''; position: absolute; bottom: 20%; left: 45%; width: 15%; height: 25%; background: #f48fb1; border: 2px solid black; border-radius: 0 0 10px 10px; }
-
-        .mon-silly { width: 60%; height: 70%; background: #ffa726; border-radius: 50%; border: 3px solid #ef6c00; position: relative; }
-        .mon-silly .eye { width: 12px; height: 12px; background: white; border: 2px solid black; border-radius: 50%; position: absolute; }
-        .mon-silly::after { content: ''; width: 30px; height: 10px; border-bottom: 3px solid black; border-radius: 50%; position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); }
-
-        .mon-grumpy { width: 70%; height: 60%; background: #ab47bc; border: 3px solid #7b1fa2; position: relative; clip-path: polygon(0% 10%, 10% 0%, 20% 10%, 30% 0%, 40% 10%, 50% 0%, 60% 10%, 70% 0%, 80% 10%, 90% 0%, 100% 10%, 100% 100%, 0% 100%); }
-        .mon-grumpy::before { content:''; position: absolute; top: 25%; left: 20%; width: 15px; height: 5px; background: white; border: 2px solid black; box-shadow: 30px 0 0 white, 30px 0 0 2px black; transform: rotate(15deg); }
-        .mon-grumpy::after { content:''; position: absolute; top: 25%; right: 20%; width: 15px; height: 5px; transform: rotate(-15deg); }
-
-        /* --- ANIMATIONS --- */
-        .winner-anim { animation: happyBounce 0.8s infinite; }
-        @keyframes happyBounce { 0% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-
-        /* Prize Drop */
-        .prize-popup {
-            position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
-            z-index: 20; font-size: 3rem;
-            animation: prizeReveal 1.5s forwards ease-out;
-        }
-        @keyframes prizeReveal {
-            0% { top: -100px; opacity: 0; transform: translateX(-50%) scale(0.5); }
-            50% { top: 10px; opacity: 1; transform: translateX(-50%) scale(1.2); }
-            70% { transform: translateX(-50%) scale(0.9) rotate(10deg); }
-            80% { transform: translateX(-50%) scale(1.1) rotate(-10deg); }
-            100% { top: 0px; opacity: 1; transform: translateX(-50%) scale(1); }
+        /* Important: Ensure custom images never exceed their container */
+        .custom-img {
+            max-width: 90%; max-height: 90%; width: auto; height: auto;
+            object-fit: contain; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
         }
 
-        /* Loser Effects */
-        .sinking-anim { animation: sinkIntoWater 3s forwards; }
-        @keyframes sinkIntoWater { 100% { transform: translateY(50px); opacity: 0; } }
-        .puddle { position: absolute; bottom: 0px; width: 90%; height: 25%; background: #29b6f6; border-radius: 50%; z-index: 1; animation: growPuddle 0.5s forwards; }
-        @keyframes growPuddle { from { transform: scale(0); } to { transform: scale(1); } }
-        .rain-cloud { position: absolute; top: -45px; left: 50%; transform: translateX(-50%); font-size: 3rem; z-index: 10; }
-        .rain-drop { position: absolute; width: 3px; height: 15px; background: #29b6f6; top: -10px; z-index: 9; animation: rainFall 0.6s linear infinite; }
-        @keyframes rainFall { to { transform: translateY(120px); opacity: 0; } }
-        .tear { position: absolute; width: 8px; height: 8px; background: #0288d1; border-radius: 0 50% 50% 50%; transform: rotate(45deg); top: 40%; z-index: 10; opacity: 0; animation: cryStream 1s infinite linear; }
-        @keyframes cryStream { 0% { top: 40%; opacity: 1; } 100% { top: 80%; opacity: 0; } }
+        .mon-green { width: 75%; height: 75%; background: #8bc34a; border-radius: 50%; border: 3px solid #33691e; position: relative; }
+        .mon-green::after { content: ''; position: absolute; top: 25%; left: 25%; width: 50%; height: 50%; background: white; border-radius: 50%; border: 2px solid black; }
+        .mon-green::before { content: ''; position: absolute; top: 45%; left: 45%; width: 15%; height: 15%; background: black; border-radius: 50%; z-index: 2; }
+
+        .mon-blue { width: 75%; height: 75%; background: #42a5f5; border-radius: 15%; border: 3px solid #0d47a1; position: relative; }
+        .mon-blue .eye { position: absolute; top: 30%; width: 25%; height: 25%; background: white; border: 2px solid black; border-radius: 50%; }
+        .mon-blue .eye.l { left: 15%; } .mon-blue .eye.r { right: 15%; }
+        .mon-blue::after { content: ''; position: absolute; bottom: 20%; left: 40%; width: 20%; height: 20%; background: pink; border: 2px solid black; border-radius: 0 0 10px 10px; }
+
+        .mon-orange { width: 65%; height: 85%; background: #ff9800; border-radius: 50%; border: 3px solid #e65100; position: relative; }
+        .mon-orange::after { content: ''; position: absolute; top: 40%; left: 15%; width: 70%; height: 30%; background: white; border-radius: 50%; border: 2px solid black; }
+        .mon-orange::before { content: ''; position: absolute; top: 50%; left: 45%; width: 10%; height: 10%; background: black; border-radius: 50%; z-index: 2; }
+
+        .mon-purple { width: 75%; height: 75%; background: #9c27b0; position: relative; clip-path: polygon(0% 20%, 20% 0%, 40% 20%, 60% 0%, 80% 20%, 100% 0%, 100% 100%, 0% 100%); }
+        .mon-purple .eye { position: absolute; top: 40%; width: 25%; height: 10%; background: white; border: 1px solid black; }
+        .mon-purple .eye.l { left: 15%; transform: rotate(15deg); } .mon-purple .eye.r { right: 15%; transform: rotate(-15deg); }
+
+        /* Animations */
+        .winner-anim { animation: bounce 0.6s infinite; }
+        @keyframes bounce { 0% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .prize-drop { position: absolute; font-size: 2.5rem; z-index: 10; animation: drop 1s forwards; }
+        @keyframes drop { 0% { transform: translateY(-50px) scale(0); } 100% { transform: translateY(0) scale(1); } }
+        .sinking-anim { animation: sink 3s forwards; }
+        @keyframes sink { 100% { transform: translateY(30px); opacity: 0; } }
+        .rain-cloud { position: absolute; top: -30px; font-size: 2rem; z-index: 5; left: 50%; transform: translateX(-50%); }
+        .rain-drop { position: absolute; width: 2px; height: 10px; background: blue; animation: rain 0.5s infinite linear; top: 0; }
+        @keyframes rain { to { transform: translateY(60px); opacity: 0; } }
 
     </style>
 </head>
 <body>
 
-<h1 id="main-title">Tic Tac Toe</h1>
+<h1>Tic Tac Toe</h1>
 
-<div class="container" id="app-container">
+<div class="dashboard">
 
-    <div id="view-mode" class="view-section">
-        <h2>Who is playing?</h2>
-        <button class="btn btn-blue nav-item" onclick="setMode('pvc')" tabindex="0">1 Player (vs Computer)</button>
-        <br>
-        <button class="btn btn-red nav-item" onclick="setMode('pvp')" tabindex="0">2 Players</button>
-        <p style="font-size: 0.9rem; color: #666; margin-top: 20px;">📺 Arrow Keys to Move, Enter to Select</p>
-    </div>
-
-    <div id="view-avatar" class="view-section hidden">
-        <h2 id="avatar-title">Player 1: Pick!</h2>
-        <div class="avatar-grid">
-            <div class="avatar-option nav-item draw-new-btn" onclick="openDrawingTool()" tabindex="0">🎨</div>
-            <div class="avatar-option nav-item" onclick="selectPreMade('slime')" tabindex="0"><div class="avatar-wrapper"><div class="mon-slime"></div></div></div>
-            <div class="avatar-option nav-item" onclick="selectPreMade('derpy')" tabindex="0"><div class="avatar-wrapper"><div class="mon-derpy"></div></div></div>
-            <div class="avatar-option nav-item" onclick="selectPreMade('silly')" tabindex="0"><div class="avatar-wrapper"><div class="mon-silly"><div class="eye" style="top:15px; left:10px;"></div><div class="eye" style="top:10px; left:35px;"></div><div class="eye" style="top:15px; left:60px;"></div></div></div></div>
-            <div class="avatar-option nav-item" onclick="selectPreMade('grumpy')" tabindex="0"><div class="avatar-wrapper"><div class="mon-grumpy"></div></div></div>
-        </div>
-    </div>
-
-    <div id="view-turn" class="view-section hidden">
-        <h2>Who goes first?</h2>
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-            <button class="btn btn-green nav-item" onclick="chooseTurn('p1')" tabindex="0">Me / Player 1</button>
-            <button class="btn btn-red nav-item" onclick="chooseTurn('p2')" tabindex="0" id="btn-p2-start">Computer</button>
-            <button class="btn btn-purple nav-item" onclick="chooseTurn('random')" tabindex="0">Random 🎲</button>
-        </div>
-    </div>
-
-    <div id="view-drawing" class="view-section hidden">
-        <div class="giggle-bot-area">
-            <div class="bot-avatar" id="bot-face">🤨</div>
-            <div class="speech-bubble" id="bot-text">Impress me.</div>
-        </div>
-        <div class="canvas-wrapper" id="canvas-container">
-            <canvas id="paintCanvas" width="280" height="280"></canvas>
-            <div id="tv-cursor"></div>
-        </div>
-        <div class="tools-panel">
-            <div class="palette">
-                <div class="color-swatch nav-item active" style="background:#000000" onclick="setColor('black', this)" tabindex="0"></div>
-                <div class="color-swatch nav-item" style="background:#795548" onclick="setColor('brown', this)" tabindex="0"></div>
-                <div class="color-swatch nav-item" style="background:#ff4757" onclick="setColor('red', this)" tabindex="0"></div>
-                <div class="color-swatch nav-item" style="background:#2ed573" onclick="setColor('green', this)" tabindex="0"></div>
-                <div class="color-swatch nav-item" style="background:#3742fa" onclick="setColor('blue', this)" tabindex="0"></div>
+    <div class="panel panel-setup">
+        <div class="control-group">
+            <span class="control-label">Game Mode</span>
+            <div class="btn-group">
+                <button class="btn-toggle active" id="mode-pvc" onclick="game.setMode('pvc')">1 Player</button>
+                <button class="btn-toggle" id="mode-pvp" onclick="game.setMode('pvp')">2 Players</button>
             </div>
         </div>
-        <div style="margin-top: 10px;">
-            <button class="btn btn-red nav-item" onclick="clearCanvas()" tabindex="0">Clear</button>
-            <button class="btn btn-green nav-item" onclick="saveDrawing()" tabindex="0">Finish!</button>
+
+        <div class="control-group">
+            <span class="control-label">You (Player 1)</span>
+            <div class="avatar-grid-mini" id="p1-grid"></div>
+            <button style="margin-top:5px; width:100%; padding:5px; cursor:pointer;" onclick="painter.open('p1')" class="btn-toggle">🎨 Paint New</button>
         </div>
+
+        <div class="control-group">
+            <span class="control-label" id="p2-label">Computer</span>
+            <div class="avatar-grid-mini" id="p2-grid"></div>
+            <button id="p2-paint-btn" style="margin-top:5px; width:100%; padding:5px; cursor:pointer;" onclick="painter.open('p2')" class="btn-toggle hidden">🎨 Paint New</button>
+        </div>
+
+        <div class="control-group">
+            <span class="control-label">Who Starts?</span>
+            <div class="btn-group">
+                <button class="btn-toggle active" id="start-p1" onclick="game.setStarter('p1')">Me</button>
+                <button class="btn-toggle" id="start-p2" onclick="game.setStarter('p2')">Them</button>
+            </div>
+        </div>
+
+        <button class="btn-toggle" style="background:#ef5350; color:white; width:100%; margin-top:10px;" onclick="game.reset()">Restart Game</button>
     </div>
 
-    <div id="view-game" class="view-section hidden">
-        <div class="game-layout">
-            <div class="game-main">
-                <div class="scoreboard">
-                    <div class="score-box"><span id="p1-name">P1</span><br><span class="score-val" id="score-p1">0</span></div>
-                    <div class="score-box"><span id="p2-name">P2</span><br><span class="score-val" id="score-p2">0</span></div>
-                </div>
-                <h3 id="status-text">Start!</h3>
-                <div class="board" id="board"></div>
-
-                <div style="margin-top:10px;">
-                    <button class="btn btn-blue nav-item" onclick="restartGame()" tabindex="0">Play Again</button>
-                    <button class="btn btn-red nav-item" onclick="location.reload()" tabindex="0">Exit</button>
-                </div>
+    <div class="panel panel-game">
+        <div class="scoreboard">
+            <div class="score-card">
+                <div class="control-label p1-color">P1</div>
+                <div class="score-num p1-color" id="score-p1">0</div>
             </div>
-
-            <div class="side-collection">
-
-                <div class="shelf-section" style="background: rgba(239, 83, 80, 0.1);">
-                    <div class="collection-title" style="color: #ef5350;">Player 1 Toys</div>
-                    <div id="shelf-p1" class="shelf-grid-inner"></div>
-                </div>
-
-                <div class="shelf-divider"></div>
-
-                <div class="shelf-section" style="background: rgba(3, 169, 244, 0.1);">
-                    <div class="collection-title" style="color: #03a9f4;" id="shelf-title-p2">Player 2 Toys</div>
-                    <div id="shelf-p2" class="shelf-grid-inner"></div>
-                </div>
-
+            <div style="display:flex; align-items:center;">
+                <span id="status-text" style="font-weight:bold; color:#555;">P1 Turn</span>
+            </div>
+            <div class="score-card">
+                <div class="control-label p2-color">P2</div>
+                <div class="score-num p2-color" id="score-p2">0</div>
             </div>
         </div>
+
+        <div class="board" id="board"></div>
+    </div>
+
+    <div class="panel panel-prizes">
+        <div class="control-label p1-color">P1 Collection</div>
+        <div class="shelf" id="shelf-p1"></div>
+
+        <div class="control-label p2-color" style="margin-top:10px;">P2 Collection</div>
+        <div class="shelf" id="shelf-p2"></div>
     </div>
 
 </div>
 
+<div id="draw-overlay" class="hidden">
+    <div class="draw-modal">
+        <h2 style="margin-top:0;">Paint Avatar</h2>
+        <canvas id="canvas" width="280" height="280"></canvas>
+        <div class="palette">
+            <div class="swatch active" style="background:black" onclick="painter.setColor('black', this)"></div>
+            <div class="swatch" style="background:#e57373" onclick="painter.setColor('#e57373', this)"></div>
+            <div class="swatch" style="background:#81c784" onclick="painter.setColor('#81c784', this)"></div>
+            <div class="swatch" style="background:#64b5f6" onclick="painter.setColor('#64b5f6', this)"></div>
+        </div>
+        <div style="display:flex; gap:10px; width:100%;">
+            <button class="btn-toggle" onclick="painter.clear()">Clear</button>
+            <button class="btn-toggle active" onclick="painter.save()">Save</button>
+            <button class="btn-toggle" onclick="painter.close()">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    const state = {
-        mode: '', turn: 'p1', setupPlayer: 1,
-        p1: { html: '' }, p2: { html: '' },
-        board: Array(9).fill(''), active: false, scores: { p1: 0, p2: 0 },
-        // Collection for each player (counts for each toy ID)
-        p1Collection: { 'bear':0, 'dino':0, 'uni':0, 'robot':0, 'duck':0, 'car':0 },
-        p2Collection: { 'bear':0, 'dino':0, 'uni':0, 'robot':0, 'duck':0, 'car':0 }
-    };
+    const game = {
+        mode: 'pvc',
+        starter: 'p1',
+        turn: 'p1',
+        active: true,
+        board: Array(9).fill(''),
+        scores: { p1: 0, p2: 0 },
+        toys: { p1: {}, p2: {} },
+        p1Avatar: 'green',
+        p2Avatar: 'blue',
+        p1Custom: null,
+        p2Custom: null,
 
-    const premades = {
-        'slime': '<div class="mon-slime"></div>',
-        'derpy': '<div class="mon-derpy"></div>',
-        'silly': '<div class="mon-silly"><div class="eye" style="top:15px; left:10px;"></div><div class="eye" style="top:10px; left:35px;"></div><div class="eye" style="top:15px; left:60px;"></div></div>',
-        'grumpy': '<div class="mon-grumpy"></div>'
-    };
+        init: function() {
+            if(this.p1Avatar === this.p2Avatar) this.randomizeBot();
+            ui.renderSelectors();
+            ui.renderBoard();
+            ui.updateShelves();
+        },
 
-    const toyList = [
-        { id: 'bear', icon: '🧸', name: 'Teddy' },
-        { id: 'dino', icon: '🦖', name: 'T-Rex' },
-        { id: 'uni', icon: '🦄', name: 'Sparkles' },
-        { id: 'robot', icon: '🤖', name: 'Beep' },
-        { id: 'duck', icon: '🦆', name: 'Quack' },
-        { id: 'car', icon: '🏎️', name: 'Zoom' }
-    ];
+        setMode: function(m) {
+            this.mode = m;
+            document.getElementById('mode-pvc').className = m === 'pvc' ? 'btn-toggle active' : 'btn-toggle';
+            document.getElementById('mode-pvp').className = m === 'pvp' ? 'btn-toggle active' : 'btn-toggle';
+            document.getElementById('p2-label').innerText = m === 'pvc' ? "Computer" : "Player 2";
 
-    /* --- TV NAVIGATION --- */
-    let currentFocusIndex = 0, navItems = [];
-    function updateNavList() {
-        navItems = Array.from(document.querySelectorAll('.view-section:not(.hidden) .nav-item'));
-        currentFocusIndex = 0; if(navItems.length > 0) setFocus(0);
-    }
-    function setFocus(index) {
-        navItems.forEach(el => el.classList.remove('tv-focused'));
-        if(navItems[index]) { navItems[index].classList.add('tv-focused'); navItems[index].focus(); }
-    }
-    document.addEventListener('keydown', (e) => {
-        if(navItems.length === 0 && !isDrawingMode) return;
-        if(!document.getElementById('view-drawing').classList.contains('hidden')) {
-            handleTvDrawing(e);
-            if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) return;
-        }
-        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-            currentFocusIndex = (currentFocusIndex + 1) % navItems.length; setFocus(currentFocusIndex);
-        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-            currentFocusIndex = (currentFocusIndex - 1 + navItems.length) % navItems.length; setFocus(currentFocusIndex);
-        } else if (e.key === 'Enter') {
-            navItems[currentFocusIndex].click();
-        }
-    });
+            const p2Paint = document.getElementById('p2-paint-btn');
+            if(m === 'pvc') p2Paint.classList.add('hidden');
+            else p2Paint.classList.remove('hidden');
 
-    /* --- VIEW MANAGEMENT --- */
-    function switchView(id) {
-        document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-        document.getElementById(id).classList.remove('hidden');
-        setTimeout(updateNavList, 100);
-        if(id === 'view-game') renderAllShelves();
-    }
-    function setMode(m) {
-        state.mode = m; state.setupPlayer = 1; switchView('view-avatar');
-        document.getElementById('avatar-title').innerText = "Player 1: Pick!";
-        document.getElementById('btn-p2-start').innerText = m === 'pvc' ? "Computer" : "Player 2";
-    }
-    function selectPreMade(key) { finishSetup(`<div class="avatar-wrapper">${premades[key]}</div>`); }
-    function finishSetup(html) {
-        if(state.setupPlayer === 1) {
-            state.p1.html = html;
-            if(state.mode === 'pvc') {
-                // Bot picks random avatar
-                const keys = Object.keys(premades);
-                state.p2.html = `<div class="avatar-wrapper">${premades[keys[Math.floor(Math.random() * keys.length)]]}</div>`;
-                document.getElementById('p2-name').innerText = "Bot";
-                document.getElementById('shelf-title-p2').innerText = "Bot Toys";
-                switchView('view-turn');
+            if(m === 'pvc') {
+                if(this.p1Avatar === this.p2Avatar) this.randomizeBot();
+            }
+
+            ui.renderSelectors();
+            this.reset();
+        },
+
+        setStarter: function(p) {
+            this.starter = p;
+            document.querySelectorAll('#start-p1, #start-p2').forEach(b => b.classList.remove('active'));
+            document.getElementById(`start-${p}`).classList.add('active');
+            this.reset();
+        },
+
+        setAvatar: function(player, type) {
+            if(this.mode === 'pvc' && player === 'p2') return;
+
+            if(player === 'p1') {
+                this.p1Avatar = type;
+                this.p1Custom = null;
+                if(this.mode === 'pvc' && this.p2Avatar === type) {
+                    this.randomizeBot();
+                }
             } else {
-                state.setupPlayer = 2; switchView('view-avatar');
-                document.getElementById('avatar-title').innerText = "Player 2: Pick!";
+                this.p2Avatar = type;
+                this.p2Custom = null;
             }
-        } else {
-            state.p2.html = html;
-            switchView('view-turn');
-        }
-    }
-    function chooseTurn(choice) {
-        state.turn = (choice === 'random') ? (Math.random() < 0.5 ? 'p1' : 'p2') : choice;
-        startGame();
-    }
+            ui.renderSelectors();
+            ui.renderBoard();
+        },
 
-    /* --- DRAWING (SASSY BOT) --- */
-    const canvas = document.getElementById('paintCanvas');
-    const ctx = canvas.getContext('2d');
-    const tvCursor = document.getElementById('tv-cursor');
-    const botText = document.getElementById('bot-text');
-    const botFace = document.getElementById('bot-face');
-    let isDrawingMode = false, tvBrushActive = false, tvX = 140, tvY = 140, currentColor = 'black';
+        randomizeBot: function() {
+            const keys = Object.keys(ui.avatars);
+            const available = keys.filter(k => k !== this.p1Avatar);
+            this.p2Avatar = available[Math.floor(Math.random() * available.length)];
+            this.p2Custom = null;
+        },
 
-    function openDrawingTool() { switchView('view-drawing'); ctx.clearRect(0,0,300,300); isDrawingMode = true; tvCursor.style.display = 'block'; updateTvCursor(); }
-    function setColor(c, btn) {
-        currentColor = c; document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('active')); btn.classList.add('active');
-        if(c === 'brown') { botFace.innerText = "🤢"; botText.innerText = "Is that poop?"; }
-        else if(c === 'green') { botFace.innerText = "🤧"; botText.innerText = "Boogers?"; }
-        else { botFace.innerText = "🤔"; botText.innerText = "Interesting choice."; }
-    }
+        reset: function() {
+            this.board.fill('');
+            this.active = true;
+            this.turn = this.starter;
+            ui.renderBoard();
+            ui.updateStatus();
+            if(this.mode === 'pvc' && this.turn === 'p2') setTimeout(() => ai.move(), 600);
+        },
 
-    let mouseDrawing = false;
-    canvas.addEventListener('mousedown', (e) => startStroke(e.offsetX, e.offsetY));
-    canvas.addEventListener('mousemove', (e) => { if(mouseDrawing) drawTo(e.offsetX, e.offsetY); });
-    canvas.addEventListener('mouseup', endStroke);
-    canvas.addEventListener('touchstart', (e) => { const r = canvas.getBoundingClientRect(); startStroke(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top); });
-    canvas.addEventListener('touchmove', (e) => { const r = canvas.getBoundingClientRect(); if(mouseDrawing) drawTo(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top); e.preventDefault(); });
-    canvas.addEventListener('touchend', endStroke);
+        clickCell: function(i) {
+            if(!this.active || this.board[i]) return;
+            if(this.mode === 'pvc' && this.turn === 'p2') return;
+            this.executeMove(i);
+        },
 
-    function startStroke(x, y) { mouseDrawing = true; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.strokeStyle = currentColor; }
-    function drawTo(x, y) { ctx.lineTo(x, y); ctx.stroke(); }
-    function endStroke() { mouseDrawing = false; ctx.beginPath(); }
-    function handleTvDrawing(e) {
-        const speed = 15; let moved = false;
-        if(e.key === 'ArrowUp') { tvY -= speed; moved = true; }
-        if(e.key === 'ArrowDown') { tvY += speed; moved = true; }
-        if(e.key === 'ArrowLeft') { tvX -= speed; moved = true; }
-        if(e.key === 'ArrowRight') { tvX += speed; moved = true; }
-        tvX = Math.max(0, Math.min(280, tvX)); tvY = Math.max(0, Math.min(280, tvY));
-        if(moved) { updateTvCursor(); if(tvBrushActive) { ctx.lineTo(tvX, tvY); ctx.stroke(); } else { ctx.moveTo(tvX, tvY); } }
-        if(e.key === 'Enter') {
-            const focused = document.querySelector('.tv-focused');
-            if(!focused || focused.tagName !== 'BUTTON' && !focused.classList.contains('color-swatch')) {
-                tvBrushActive = !tvBrushActive;
-                tvCursor.style.backgroundColor = tvBrushActive ? currentColor : 'transparent';
-                tvCursor.style.border = tvBrushActive ? 'none' : '2px solid red';
-                if(tvBrushActive) { ctx.beginPath(); ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.strokeStyle = currentColor; ctx.moveTo(tvX, tvY); } else { ctx.beginPath(); }
-            }
-        }
-    }
-    function updateTvCursor() { tvCursor.style.left = tvX + 'px'; tvCursor.style.top = tvY + 'px'; }
-    function clearCanvas() { ctx.clearRect(0, 0, 300, 300); botFace.innerText = "🙄"; botText.innerText = "Finally, it was ugly."; }
-    function saveDrawing() { isDrawingMode = false; finishSetup(`<div class="avatar-wrapper"><img src="${canvas.toDataURL()}" class="custom-drawing"></div>`); }
+        executeMove: function(i) {
+            this.board[i] = this.turn;
+            ui.renderBoard();
 
-    /* --- GAME LOGIC --- */
-    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            if(this.checkWin()) { this.endGame(this.turn); return; }
+            if(!this.board.includes('')) { this.endGame('draw'); return; }
 
-    function startGame() {
-        switchView('view-game'); state.board.fill(''); state.active = true;
-        renderBoard(); updateStatusText();
-        if(state.mode === 'pvc' && state.turn === 'p2') setTimeout(computerMove, 800);
-    }
-    function restartGame() {
-        state.board.fill(''); state.active = true;
-        renderBoard(); updateStatusText();
-        if(state.mode === 'pvc' && state.turn === 'p2') setTimeout(computerMove, 800);
-    }
-    function updateStatusText() {
-        let name = state.turn === 'p1' ? "Player 1" : (state.mode === 'pvc' ? "Bot" : "Player 2");
-        document.getElementById('status-text').innerText = `${name}'s Turn!`;
-    }
-    function renderBoard() {
-        const el = document.getElementById('board'); el.innerHTML = '';
-        state.board.forEach((cell, i) => {
-            const div = document.createElement('div'); div.className = 'cell nav-item'; div.tabIndex = 0;
-            div.onclick = () => move(i);
-            div.addEventListener('keydown', (e) => { if(e.key === 'Enter') move(i); });
-            if(cell === 'p1') div.innerHTML = state.p1.html;
-            if(cell === 'p2') div.innerHTML = state.p2.html;
-            if(cell !== '') div.classList.add('taken');
-            el.appendChild(div);
-        });
-        updateNavList();
-    }
-    function move(i) {
-        if(!state.active || state.board[i] !== '') return;
-        state.board[i] = state.turn;
-        renderBoard();
-        if(checkWin(state.turn, state.board)) { endGame(state.turn); return; }
-        if(!state.board.includes('')) { endGame('draw'); return; }
-        state.turn = state.turn === 'p1' ? 'p2' : 'p1';
-        updateStatusText();
-        if(state.mode === 'pvc' && state.turn === 'p2') setTimeout(computerMove, 500);
-    }
+            this.turn = this.turn === 'p1' ? 'p2' : 'p1';
+            ui.updateStatus();
 
-    /* --- AI --- */
-    function computerMove() {
-        if(!state.active) return;
-        if (Math.random() < 0.1) {
-            const empty = state.board.map((v, i) => v === '' ? i : null).filter(v => v !== null);
-            move(empty[Math.floor(Math.random() * empty.length)]);
-        } else { move(getBestMove([...state.board])); }
-    }
-    function getBestMove(board) {
-        let bestScore = -Infinity, bestMove = -1;
-        for(let i = 0; i < 9; i++) {
-            if(board[i] === '') {
-                board[i] = 'p2'; let score = minimax(board, 0, false); board[i] = '';
-                if(score > bestScore) { bestScore = score; bestMove = i; }
+            if(this.mode === 'pvc' && this.turn === 'p2') setTimeout(() => ai.move(), 600);
+        },
+
+        checkWin: function() {
+            const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            return wins.some(w => this.board[w[0]] === this.turn && this.board[w[1]] === this.turn && this.board[w[2]] === this.turn);
+        },
+
+        endGame: function(winner) {
+            this.active = false;
+            const txt = document.getElementById('status-text');
+
+            if(winner === 'draw') {
+                txt.innerText = "Draw!";
+                ui.triggerRain(null);
+            } else {
+                txt.innerText = (winner === 'p1' ? "P1" : "P2") + " Wins!";
+                this.scores[winner]++;
+                document.getElementById(`score-${winner}`).innerText = this.scores[winner];
+
+                const toysList = ['🧸','🦖','🦄','🤖','🦆','🏎️','🚀','🍕'];
+                const prize = toysList[Math.floor(Math.random() * toysList.length)];
+
+                if(!this.toys[winner][prize]) this.toys[winner][prize] = 0;
+                this.toys[winner][prize]++;
+                ui.updateShelves();
+
+                ui.triggerWin(winner, prize);
             }
         }
-        return bestMove;
-    }
-    function minimax(board, depth, isMaximizing) {
-        if (checkWin('p2', board)) return 10 - depth;
-        if (checkWin('p1', board)) return depth - 10;
-        if (!board.includes('')) return 0;
-        if (isMaximizing) {
-            let bestScore = -Infinity;
-            for (let i = 0; i < 9; i++) { if (board[i] === '') { board[i] = 'p2'; bestScore = Math.max(bestScore, minimax(board, depth + 1, false)); board[i] = ''; } }
-            return bestScore;
-        } else {
-            let bestScore = Infinity;
-            for (let i = 0; i < 9; i++) { if (board[i] === '') { board[i] = 'p1'; bestScore = Math.min(bestScore, minimax(board, depth + 1, true)); board[i] = ''; } }
-            return bestScore;
-        }
-    }
-    function checkWin(p, currentBoard) { return lines.some(l => currentBoard[l[0]]===p && currentBoard[l[1]]===p && currentBoard[l[2]]===p); }
+    };
 
-    /* --- PRIZE & ENDGAME --- */
-    function endGame(winner) {
-        state.active = false;
-        const status = document.getElementById('status-text');
-        const cells = document.querySelectorAll('.cell');
+    const ui = {
+        avatars: {
+            green: `<div class="mon-green"></div>`,
+            blue: `<div class="mon-blue"><div class="eye l"></div><div class="eye r"></div></div>`,
+            orange: `<div class="mon-orange"></div>`,
+            purple: `<div class="mon-purple"><div class="eye l"></div><div class="eye r"></div></div>`
+        },
 
-        if(winner === 'draw') {
-            status.innerText = "It's a Draw! 🌧️";
-            cells.forEach(c => { if(c.innerHTML) applyLoserStyle(c); });
-        } else {
-            const winnerName = winner === 'p1' ? "Player 1" : (state.mode === 'pvc' ? "Bot" : "Player 2");
-            state.scores[winner]++;
-            document.getElementById(`score-${winner}`).innerText = state.scores[winner];
+        renderSelectors: function() {
+            ['p1', 'p2'].forEach(p => {
+                const el = document.getElementById(`${p}-grid`);
+                el.innerHTML = '';
+                const isLocked = (p === 'p2' && game.mode === 'pvc');
 
-            // Award Prize Logic
-            const prize = toyList[Math.floor(Math.random() * toyList.length)];
+                Object.keys(this.avatars).forEach(key => {
+                    const div = document.createElement('div');
+                    let classes = 'mini-avatar';
+                    if(game[`${p}Avatar`] === key && !game[`${p}Custom`]) classes += ' active';
+                    if(isLocked) classes += ' locked';
 
-            if(winner === 'p1') state.p1Collection[prize.id]++;
-            else state.p2Collection[prize.id]++;
+                    div.className = classes;
+                    div.innerHTML = `<div class="avatar-wrapper" style="transform:scale(0.6)">${this.avatars[key]}</div>`;
 
-            renderAllShelves();
+                    if(!isLocked) div.onclick = () => game.setAvatar(p, key);
 
-            status.innerText = `${winnerName} won a ${prize.name}!`;
+                    el.appendChild(div);
+                });
 
-            cells.forEach((c, i) => {
-                if(state.board[i] === winner) applyWinnerStyle(c, prize);
-                else if(state.board[i]) applyLoserStyle(c);
+                if(game[`${p}Custom`]) {
+                    const div = document.createElement('div');
+                    div.className = 'mini-avatar active';
+                    div.innerHTML = '🎨';
+                    el.appendChild(div);
+                }
             });
-        }
-    }
+        },
 
-    function renderAllShelves() {
-        renderOneShelf('shelf-p1', state.p1Collection, 'bg-p1');
-        renderOneShelf('shelf-p2', state.p2Collection, 'bg-p2');
-    }
+        renderBoard: function() {
+            const el = document.getElementById('board');
+            el.innerHTML = '';
+            game.board.forEach((val, i) => {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.onclick = () => game.clickCell(i);
+                if(val) {
+                    let html = '';
+                    if(game[`${val}Custom`]) html = `<img src="${game[`${val}Custom`]}" class="custom-img">`;
+                    else html = this.avatars[game[`${val}Avatar`]];
+                    cell.innerHTML = `<div class="avatar-wrapper">${html}</div>`;
+                }
+                el.appendChild(cell);
+            });
+        },
 
-    function renderOneShelf(containerId, collection, bgClass) {
-        const container = document.getElementById(containerId);
-        container.innerHTML = '';
-        let hasItems = false;
-        toyList.forEach(toy => {
-            const count = collection[toy.id];
-            if(count > 0) {
-                hasItems = true;
-                const div = document.createElement('div');
-                div.className = 'mini-toy';
-                div.innerHTML = `${toy.icon} <div class="mini-toy-count ${bgClass}">${count}</div>`;
-                container.appendChild(div);
+        updateStatus: function() {
+            const txt = document.getElementById('status-text');
+            if(!game.active) return;
+            const name = game.turn === 'p1' ? "P1 Turn" : (game.mode === 'pvc' ? "Bot Turn" : "P2 Turn");
+            txt.innerText = name;
+            txt.style.color = game.turn === 'p1' ? '#e57373' : '#64b5f6';
+        },
+
+        updateShelves: function() {
+            ['p1', 'p2'].forEach(p => {
+                const el = document.getElementById(`shelf-${p}`);
+                el.innerHTML = '';
+                for(let t in game.toys[p]) {
+                    const d = document.createElement('div');
+                    d.className = 'mini-toy';
+                    d.innerHTML = `${t}<div class="mini-toy-count">${game.toys[p][t]}</div>`;
+                    el.appendChild(d);
+                }
+            });
+        },
+
+        triggerWin: function(winner, prize) {
+            const cells = document.getElementById('board').children;
+            game.board.forEach((val, i) => {
+                if(val === winner) {
+                    const w = cells[i].querySelector('.avatar-wrapper');
+                    if(w) w.classList.add('winner-anim');
+                    const p = document.createElement('div');
+                    p.className = 'prize-drop'; p.innerText = prize;
+                    cells[i].appendChild(p);
+                } else if(val) {
+                    this.addRain(cells[i]);
+                }
+            });
+        },
+
+        triggerRain: function(target) {
+            const cells = document.getElementById('board').children;
+            game.board.forEach((val, i) => {
+                if(val) this.addRain(cells[i]);
+            });
+        },
+
+        addRain: function(cell) {
+            const w = cell.querySelector('.avatar-wrapper');
+            if(w) w.classList.add('sinking-anim');
+            const c = document.createElement('div'); c.className = 'rain-cloud'; c.innerText = '🌧️';
+            cell.appendChild(c);
+            for(let k=0; k<3; k++){
+                const d = document.createElement('div'); d.className='rain-drop';
+                d.style.left = (20+k*30)+'%'; d.style.animationDelay=(k*0.2)+'s';
+                cell.appendChild(d);
             }
-        });
-        if(!hasItems) container.innerHTML = '<div style="font-size:0.8rem; color:#888;">Empty</div>';
-    }
+        }
+    };
 
-    function applyWinnerStyle(cell, prize) {
-        const wrapper = cell.querySelector('.avatar-wrapper');
-        if(wrapper) {
-            wrapper.classList.add('winner-anim');
-            const p = document.createElement('div');
-            p.className = 'prize-popup';
-            p.innerText = prize ? prize.icon : '🎁';
-            cell.appendChild(p);
-        }
-    }
-    function applyLoserStyle(cell) {
-        const wrapper = cell.querySelector('.avatar-wrapper');
-        if(wrapper) {
-            wrapper.classList.add('sinking-anim');
-            wrapper.innerHTML += `<div class="tear" style="left:30%; animation-delay:0s"></div><div class="tear" style="left:70%; animation-delay:0.2s"></div>`;
-            const p = document.createElement('div'); p.className = 'puddle'; cell.appendChild(p);
-            const cloud = document.createElement('div'); cloud.className = 'rain-cloud'; cloud.innerText = '🌧️'; cell.appendChild(cloud);
-            for(let i=0; i<3; i++) {
-                const drop = document.createElement('div'); drop.className = 'rain-drop';
-                drop.style.left = (20 + i*30) + '%'; drop.style.animationDelay = (i * 0.2) + 's';
-                cell.appendChild(drop);
+    const ai = {
+        move: function() {
+            const empty = game.board.map((v, i) => v === '' ? i : null).filter(v => v !== null);
+            if(empty.length === 0) return;
+            let move = this.findWin('p2') || this.findWin('p1') || empty[Math.floor(Math.random() * empty.length)];
+            game.executeMove(move);
+        },
+        findWin: function(player) {
+            const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            for(let w of wins) {
+                const [a,b,c] = w;
+                const l = [game.board[a], game.board[b], game.board[c]];
+                if(l.filter(x => x === player).length === 2 && l.includes('')) {
+                    if(game.board[a] === '') return a;
+                    if(game.board[b] === '') return b;
+                    if(game.board[c] === '') return c;
+                }
             }
+            return null;
         }
-    }
+    };
+
+    const painter = {
+        target: 'p1',
+        canvas: document.getElementById('canvas'),
+        ctx: document.getElementById('canvas').getContext('2d'),
+        color: 'black',
+        isDrawing: false,
+
+        open: function(p) {
+            this.target = p;
+            document.getElementById('draw-overlay').classList.remove('hidden');
+            this.clear();
+        },
+        close: function() {
+            document.getElementById('draw-overlay').classList.add('hidden');
+        },
+        clear: function() {
+            this.ctx.clearRect(0,0,280,280);
+        },
+        setColor: function(c, el) {
+            this.color = c;
+            document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+            el.classList.add('active');
+        },
+        save: function() {
+            game[`${this.target}Custom`] = this.canvas.toDataURL();
+            ui.renderSelectors();
+            game.reset();
+            this.close();
+        },
+
+        init: function() {
+            const c = this.canvas;
+            c.addEventListener('mousedown', e => this.start(e.offsetX, e.offsetY));
+            c.addEventListener('mousemove', e => this.move(e.offsetX, e.offsetY));
+            c.addEventListener('mouseup', () => this.stop());
+            c.addEventListener('touchstart', e => { e.preventDefault(); const r = c.getBoundingClientRect(); this.start(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top); });
+            c.addEventListener('touchmove', e => { e.preventDefault(); const r = c.getBoundingClientRect(); this.move(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top); });
+            c.addEventListener('touchend', () => this.stop());
+        },
+        start: function(x, y) { this.isDrawing = true; this.ctx.beginPath(); this.ctx.moveTo(x, y); this.ctx.lineWidth = 8; this.ctx.lineCap = 'round'; this.ctx.strokeStyle = this.color; },
+        move: function(x, y) { if(this.isDrawing) { this.ctx.lineTo(x, y); this.ctx.stroke(); } },
+        stop: function() { this.isDrawing = false; this.ctx.beginPath(); }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => { painter.init(); game.init(); });
+
 </script>
 </body>
 </html>
