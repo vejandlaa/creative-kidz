@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Monster Dashboard: Shop Edition</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Monster Dashboard</h1>
+
+<div class="dashboard">
+
+    <div class="panel panel-setup">
+        <div class="player-header p1-color">
+            PLAYER 1
+            <div class="coin-pill" id="bank-p1">💰 <span id="coin-p1">0</span></div>
+        </div>
+
+        <div class="control-group">
+            <div class="avatar-grid-mini" id="p1-grid"></div>
+            <div style="display:flex; gap:5px; margin-top:5px;">
+                <button class="btn-sm" onclick="painter.open('p1')">🎨 Paint</button>
+                <button class="btn-sm btn-shop" onclick="shop.open()">🛒 Shop</button>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="control-group">
+            <span class="control-label">Game Mode</span>
+            <div class="btn-group">
+                <button class="btn-toggle active" id="mode-pvc" onclick="game.setMode('pvc')">1 Player</button>
+                <button class="btn-toggle" id="mode-pvp" onclick="game.setMode('pvp')">2 Players</button>
+            </div>
+        </div>
+
+        <button class="btn-toggle" style="background:#ef5350; color:white; width:100%; margin-top:10px;" onclick="game.reset()">Restart Game</button>
+    </div>
+
+    <div class="panel panel-game">
+        <div class="scoreboard">
+            <div class="score-card">
+                <div class="control-label p1-color">P1 Score</div>
+                <div class="score-num p1-color" id="score-p1">0</div>
+            </div>
+            <div style="display:flex; align-items:center;">
+                <span id="status-text" style="font-weight:bold; color:#555;">P1 Turn</span>
+            </div>
+            <div class="score-card">
+                <div class="control-label p2-color">P2 Score</div>
+                <div class="score-num p2-color" id="score-p2">0</div>
+            </div>
+        </div>
+
+        <div class="board" id="board"></div>
+    </div>
+
+    <div class="panel panel-prizes">
+
+        <div class="player-header p2-color">
+            <span id="p2-label">COMPUTER</span>
+            <div class="coin-pill" id="bank-p2">💰 <span id="coin-p2">0</span></div>
+        </div>
+
+        <div class="control-group">
+            <div class="avatar-grid-mini" id="p2-grid"></div>
+            <button id="p2-paint-btn" class="btn-sm hidden" style="width:100%; margin-top:5px;" onclick="painter.open('p2')">🎨 Paint</button>
+        </div>
+
+        <hr>
+
+        <div class="control-label p1-color">P1 Collection</div>
+        <div class="shelf" id="shelf-p1"></div>
+
+        <div class="control-label p2-color" style="margin-top:10px;">P2 Collection</div>
+        <div class="shelf" id="shelf-p2"></div>
+    </div>
+
+</div>
+
+<div id="draw-overlay" class="hidden">
+    <div class="modal">
+        <h2 style="margin-top:0;">Paint Avatar</h2>
+        <canvas id="canvas" width="280" height="280"></canvas>
+        <div class="palette">
+            <div class="swatch active" style="background:black" onclick="painter.setColor('black', this)"></div>
+            <div class="swatch" style="background:#e57373" onclick="painter.setColor('#e57373', this)"></div>
+            <div class="swatch" style="background:#81c784" onclick="painter.setColor('#81c784', this)"></div>
+            <div class="swatch" style="background:#64b5f6" onclick="painter.setColor('#64b5f6', this)"></div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-toggle" onclick="painter.clear()">Clear</button>
+            <button class="btn-toggle active" onclick="painter.save()">Save</button>
+            <button class="btn-toggle" onclick="painter.close()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="shop-overlay" class="hidden">
+    <div class="modal shop-modal">
+        <h2>Avatar Shop</h2>
+        <div class="shop-balance">Your Balance: 💰 <span id="shop-balance">0</span></div>
+
+        <div class="shop-grid" id="shop-grid">
+        </div>
+
+        <button class="btn-buy-all" onclick="shop.unlockAll()">💎 Unlock All ($0.99)</button>
+        <button class="btn-toggle" style="margin-top:15px; width:100%" onclick="shop.close()">Close Shop</button>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
